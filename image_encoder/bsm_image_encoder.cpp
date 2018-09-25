@@ -72,7 +72,7 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     {
         srcFrame->width = src_w;
         srcFrame->height = src_h;
-        srcFrame->format = AV_PIX_FMT_YUV420P;
+        srcFrame->format = src_pixfmt;
     }
 
     if (av_frame_get_buffer(srcFrame, 1) < 0)
@@ -81,14 +81,14 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
         return false;
     }
 
-    av_image_fill_arrays(srcFrame->data, srcFrame->linesize, pdata_src, AV_PIX_FMT_YUV420P, srcFrame->width, srcFrame->height, 1);
+    av_image_fill_arrays(srcFrame->data, srcFrame->linesize, pdata_src, src_pixfmt, srcFrame->width, srcFrame->height, 1);
 
     dstFrame = av_frame_alloc();
     if (NULL != dstFrame)
     {
         dstFrame->width = src_w;
         dstFrame->height = src_h;
-        dstFrame->format = AV_PIX_FMT_RGB24;
+        dstFrame->format = dst_pixfmt;
     }
 
     //获取存储媒体数据空间
@@ -101,7 +101,7 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     //do transform
     sws_scale(img_convert_ctx, srcFrame->data, srcFrame->linesize, 0, dstFrame->height, dstFrame->data, dstFrame->linesize);
 
-    av_image_copy_to_buffer(pdata_dst, dst_size, dstFrame->data, dstFrame->linesize, AV_PIX_FMT_RGB24, dstFrame->width, dstFrame->height, 1);
+    av_image_copy_to_buffer(pdata_dst, dst_size, dstFrame->data, dstFrame->linesize, dst_pixfmt, dstFrame->width, dstFrame->height, 1);
 
     av_frame_free(&srcFrame);
     av_frame_free(&dstFrame);
@@ -217,7 +217,7 @@ bool bsm_rgb24_to_jpeg(unsigned char *pdata_src, const char* OutputFileName, int
         return false;
     }
 
-    if (!bsm_yuv420p_to_jpeg(pdata_src, OutputFileName, src_width, src_height))
+    if (!bsm_yuv420p_to_jpeg(data, OutputFileName, src_width, src_height))
     {
         printf("save yuv420 to jpeg failure\n");
         return false;
