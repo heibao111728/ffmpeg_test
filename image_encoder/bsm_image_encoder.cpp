@@ -236,3 +236,104 @@ bool bsm_rgb24_to_yuv420p(unsigned char *pdata_src, int src_width, int src_heigh
 
     return bsm_pixel_format_convert(pdata_src, src_width, src_height, src_pixfmt, pdata_dst, data_dst_size, dst_pixfmt);
 }
+
+bool bsm_yuv420p_to_jpeg(unsigned char *pdata_src, const char* OutputFileName, int src_width, int src_height)
+{
+    AVFormatContext *pFormatCtx;
+    AVStream *video_st;
+    AVCodecContext* pCodecCtx;
+    AVCodec *pCodec;
+    AVFrame* pictureFrame;  //编码前数据，如yuv420，rgb24等
+    AVPacket *pkt;          //编码后数据，如jpeg等
+
+    pFormatCtx = avformat_alloc_context();
+    avformat_alloc_output_context2(&pFormatCtx, NULL, NULL, OutputFileName);
+
+    // 获取编解码上下文信息
+    pCodecCtx = avcodec_alloc_context3(NULL);
+
+    pCodecCtx->codec_id = pFormatCtx->oformat->video_codec;
+    pCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
+    pCodecCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
+    pCodecCtx->width = src_width;
+    pCodecCtx->height = src_height;
+    pCodecCtx->time_base.num = 1;
+    pCodecCtx->time_base.den = 25;
+
+    //print log info;
+    //av_dump_format(pFormatCtx, 0, OutputFileName, 1);
+
+    pCodec = avcodec_find_encoder(pCodecCtx->codec_id);
+    if (!pCodec)
+    {
+        printf("Codec not found.");
+        return -1;
+    }
+
+    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+    {
+        printf("Could not open codec.");
+        return -1;
+    }
+
+    pictureFrame = av_frame_alloc();
+    pictureFrame->width = pCodecCtx->width;
+    pictureFrame->height = pCodecCtx->height;
+    pictureFrame->format = AV_PIX_FMT_YUV420P;
+    //int size = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
+
+    av_image_fill_arrays(pictureFrame->data, pictureFrame->linesize, pdata_src, AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
+
+    // start encoder
+    int ret = avcodec_send_frame(pCodecCtx, pictureFrame);
+
+    pkt = av_packet_alloc();
+    av_new_packet(pkt, src_width*src_height * 3);
+
+    //Read encoded data from the encoder.
+    ret = avcodec_receive_packet(pCodecCtx, pkt);
+
+    video_st = avformat_new_stream(pFormatCtx, 0);
+    if (video_st == NULL)
+    {
+        return -1;
+    }
+
+    //Write Header
+    avformat_write_header(pFormatCtx, NULL);
+
+    //Write body
+    av_write_frame(pFormatCtx, pkt);
+
+    //Write Trailer
+    av_write_trailer(pFormatCtx);
+
+    //printf("Encode Successful.\n");
+
+    av_packet_unref(pkt);               //av_packet_alloc()
+    av_frame_free(&pictureFrame);       //av_frame_alloc()
+    avformat_free_context(pFormatCtx);  //avformat_alloc_context()
+    return true;
+}
+
+bool bsm_rgb24_to_jpeg(unsigned char *pdata_src, const char* OutputFileName, int src_width, int src_height)
+{
+    int bufsize = src_width*src_height * 3 / 2;
+    unsigned char* data = (unsigned char*)malloc(bufsize);
+
+    if (!bsm_rgb24_to_yuv420p(pdata_src, src_width, src_height, data, bufsize))
+    {
+        printf("covert pixel format from rgb24 to yuv420 failure\n");
+        return false;
+    }
+
+    if (!bsm_yuv420p_to_jpeg(pdata_src, OutputFileName, src_width, src_height))
+    {
+        printf("save yuv420 to jpeg failure\n");
+        return false;
+    }
+
+    return true;
+}
+
+

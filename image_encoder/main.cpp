@@ -75,14 +75,14 @@ int main(int argc, char* argv[])
     int ret = 0;
 
     ret = av_image_alloc(src_data, src_linesize, src_w, src_h, src_pixfmt, 1);
-    if (ret < 0) 
+    if (ret < 0)
     {
         printf("Could not allocate source image\n");
         return -1;
     }
 
     ret = av_image_alloc(dst_data, dst_linesize, dst_w, dst_h, dst_pixfmt, 1);
-    if (ret < 0) 
+    if (ret < 0)
     {
         printf("Could not allocate destination image\n");
         return -1;
@@ -124,51 +124,51 @@ int main(int argc, char* argv[])
     */
     while (1)
     {
-        if (fread( temp_buffer, 1, src_w*src_h*src_bpp / 8, src_file ) != src_w*src_h*src_bpp / 8)
+        if (fread(temp_buffer, 1, src_w*src_h*src_bpp / 8, src_file) != src_w*src_h*src_bpp / 8)
         {
             printf("read src file failure\n");
             break;
         }
 
-        switch (src_pixfmt) 
+        switch (src_pixfmt)
         {
-        case AV_PIX_FMT_GRAY8: 
+        case AV_PIX_FMT_GRAY8:
         {
             memcpy(src_data[0], temp_buffer, src_w*src_h);
             break;
         }
-        case AV_PIX_FMT_YUV420P: 
+        case AV_PIX_FMT_YUV420P:
         {
             memcpy(src_data[0], temp_buffer, src_w*src_h);                    //Y
             memcpy(src_data[1], temp_buffer + src_w*src_h, src_w*src_h / 4);      //U
             memcpy(src_data[2], temp_buffer + src_w*src_h * 5 / 4, src_w*src_h / 4);  //V
             break;
         }
-        case AV_PIX_FMT_YUV422P: 
+        case AV_PIX_FMT_YUV422P:
         {
             memcpy(src_data[0], temp_buffer, src_w*src_h);                    //Y
             memcpy(src_data[1], temp_buffer + src_w*src_h, src_w*src_h / 2);      //U
             memcpy(src_data[2], temp_buffer + src_w*src_h * 3 / 2, src_w*src_h / 2);  //V
             break;
         }
-        case AV_PIX_FMT_YUV444P: 
+        case AV_PIX_FMT_YUV444P:
         {
             memcpy(src_data[0], temp_buffer, src_w*src_h);                    //Y
             memcpy(src_data[1], temp_buffer + src_w*src_h, src_w*src_h);        //U
             memcpy(src_data[2], temp_buffer + src_w*src_h * 2, src_w*src_h);      //V
             break;
         }
-        case AV_PIX_FMT_YUYV422: 
+        case AV_PIX_FMT_YUYV422:
         {
             memcpy(src_data[0], temp_buffer, src_w*src_h * 2);                  //Packed
             break;
         }
-        case AV_PIX_FMT_RGB24: 
+        case AV_PIX_FMT_RGB24:
         {
             memcpy(src_data[0], temp_buffer, src_w*src_h * 3);                  //Packed
             break;
         }
-        default: 
+        default:
         {
             printf("Not Support Input Pixel Format.\n");
             break;
@@ -180,45 +180,45 @@ int main(int argc, char* argv[])
 
         frame_idx++;
 
-        switch (dst_pixfmt) 
+        switch (dst_pixfmt)
         {
-        case AV_PIX_FMT_GRAY8: 
+        case AV_PIX_FMT_GRAY8:
         {
             fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);
             break;
         }
-        case AV_PIX_FMT_YUV420P: 
+        case AV_PIX_FMT_YUV420P:
         {
             fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);                 //Y
             fwrite(dst_data[1], 1, dst_w*dst_h / 4, dst_file);               //U
             fwrite(dst_data[2], 1, dst_w*dst_h / 4, dst_file);               //V
             break;
         }
-        case AV_PIX_FMT_YUV422P: 
+        case AV_PIX_FMT_YUV422P:
         {
             fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);					//Y
             fwrite(dst_data[1], 1, dst_w*dst_h / 2, dst_file);				//U
             fwrite(dst_data[2], 1, dst_w*dst_h / 2, dst_file);				//V
             break;
         }
-        case AV_PIX_FMT_YUV444P: 
+        case AV_PIX_FMT_YUV444P:
         {
             fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);                 //Y
             fwrite(dst_data[1], 1, dst_w*dst_h, dst_file);                 //U
             fwrite(dst_data[2], 1, dst_w*dst_h, dst_file);                 //V
             break;
         }
-        case AV_PIX_FMT_YUYV422: 
+        case AV_PIX_FMT_YUYV422:
         {
             fwrite(dst_data[0], 1, dst_w*dst_h * 2, dst_file);               //Packed
             break;
         }
-        case AV_PIX_FMT_RGB24: 
+        case AV_PIX_FMT_RGB24:
         {
             fwrite(dst_data[0], 1, dst_w*dst_h * 3, dst_file);               //Packed
             break;
         }
-        default: 
+        default:
         {
             printf("Not Support Output Pixel Format.\n");
             break;
@@ -237,87 +237,23 @@ int main(int argc, char* argv[])
 }
 #endif
 
-struct buffer_data {
-    uint8_t *ptr;
-    size_t size; ///< size left in the buffer
-};
-
-static int read_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    struct buffer_data *bd = (struct buffer_data *)opaque;
-    buf_size = FFMIN(buf_size, bd->size);
-
-    if (!buf_size)
-        return AVERROR_EOF;
-    printf("ptr:%p size:%zu\n", bd->ptr, bd->size);
-
-    /* copy internal buffer data to buf */
-    memcpy(buf, bd->ptr, buf_size);
-    bd->ptr += buf_size;
-    bd->size -= buf_size;
-
-    return buf_size;
-}
-
-static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
-    FILE *outfile)
-{
-    int ret;
-
-    /* send the frame to the encoder */
-    if (frame)
-        printf("Send frame %3\n", frame->pts);
-
-    ret = avcodec_send_frame(enc_ctx, frame);
-    if (ret < 0) 
-    {
-        fprintf(stderr, "Error sending a frame for encoding\n");
-        exit(1);
-    }
-
-    while (ret >= 0) 
-    {
-        ret = avcodec_receive_packet(enc_ctx, pkt);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-        {
-            return;
-        }
-        else if (ret < 0) 
-        {
-            fprintf(stderr, "Error during encoding\n");
-            exit(1);
-        }
-
-        printf("Write packet %3 (size=%5d)\n", pkt->pts, pkt->size);
-        fwrite(pkt->data, 1, pkt->size, outfile);
-        av_packet_unref(pkt);
-    }
-}
-
 
 int EncodeYUVToJPEG(const char* InputFileName, const char* OutputFileName, int in_w, int in_h)
 {
-    FILE *in_file = NULL;
-    fopen_s(&in_file, InputFileName, "rb");      //Input File
+    AVFormatContext *pFormatCtx;
+    AVStream *video_st;
+    AVCodecContext* pCodecCtx;
+    AVCodec *pCodec;
+    AVFrame* pictureFrame;  //编码前数据，如yuv420，rgb24等
+    AVPacket *pkt;          //编码后数据，如jpeg等
 
-    AVFormatContext *pFormatCtx = avformat_alloc_context();
+    pFormatCtx = avformat_alloc_context();
     avformat_alloc_output_context2(&pFormatCtx, NULL, NULL, OutputFileName);
-    AVOutputFormat *fmt = pFormatCtx->oformat;
 
-    AVStream *video_st = avformat_new_stream(pFormatCtx, 0);
-    if (video_st == NULL)
-    {
-        return -1;
-    }
-    // 获取编解码器上下文信息
-    AVCodecContext* pCodecCtx = avcodec_alloc_context3(NULL);
-    //pCodecCtx = video_st->codec;//已弃用
-    if (avcodec_parameters_to_context(pCodecCtx, video_st->codecpar) < 0)
-    {
-        printf( "Copy stream failed!" );
-        return -1;
-    }
-    pCodecCtx->codec_id = fmt->video_codec;
+    // 获取编解码上下文信息
+    pCodecCtx = avcodec_alloc_context3(NULL);
+
+    pCodecCtx->codec_id = pFormatCtx->oformat->video_codec;
     pCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
     pCodecCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
     pCodecCtx->width = in_w;
@@ -325,81 +261,71 @@ int EncodeYUVToJPEG(const char* InputFileName, const char* OutputFileName, int i
     pCodecCtx->time_base.num = 1;
     pCodecCtx->time_base.den = 25;
 
-    //dump some information
+    //print log info;
     av_dump_format(pFormatCtx, 0, OutputFileName, 1);
 
-    AVCodec *pCodec = avcodec_find_encoder(pCodecCtx->codec_id);
+    pCodec = avcodec_find_encoder(pCodecCtx->codec_id);
     if (!pCodec)
     {
         printf("Codec not found.");
         return -1;
     }
+
     if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
     {
         printf("Could not open codec.");
         return -1;
     }
+    uint8_t *buffer = NULL;
+    size_t buffer_size;
 
-    AVFrame* pictureFrame = av_frame_alloc();
+    pictureFrame = av_frame_alloc();
     pictureFrame->width = pCodecCtx->width;
     pictureFrame->height = pCodecCtx->height;
     pictureFrame->format = AV_PIX_FMT_YUV420P;
-    int size = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
-    uint8_t *picture_buf = (uint8_t *)av_malloc(size);
-    av_image_fill_arrays(pictureFrame->data, pictureFrame->linesize, picture_buf, AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
+    //int size = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
 
-    //Write Header
-    //avformat_write_header(pFormatCtx, NULL);
-
-    int y_size = pCodecCtx->width * pCodecCtx->height;
-    AVPacket *pkt = av_packet_alloc();
-    av_new_packet(pkt, y_size * 3);
-    //Read YUV
-    if (fread(picture_buf, 1, y_size * 3 / 2, in_file) <= 0)
+    /* slurp file content into buffer */
+    int ret1 = av_file_map(InputFileName, &buffer, &buffer_size, 0, NULL);
+    if (ret1 < 0)
     {
-        printf("Could not read input file.");
+        printf("read input file failure\n");
+    }
+
+    av_image_fill_arrays(pictureFrame->data, pictureFrame->linesize, buffer, AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
+
+    // start encoder
+    int ret = avcodec_send_frame(pCodecCtx, pictureFrame);
+
+    pkt = av_packet_alloc();
+    av_new_packet(pkt, in_w*in_h*3);
+
+    //Read encoded data from the encoder.
+    ret = avcodec_receive_packet(pCodecCtx, pkt);
+
+    video_st = avformat_new_stream(pFormatCtx, 0);
+    if (video_st == NULL)
+    {
         return -1;
     }
-    pictureFrame->data[0] = picture_buf;                    // Y
-    pictureFrame->data[1] = picture_buf + y_size;           // U 
-    pictureFrame->data[2] = picture_buf + y_size * 5 / 4;   // V
 
+    //Write Header
     avformat_write_header(pFormatCtx, NULL);
 
-    int ret = avcodec_send_frame(pCodecCtx, pictureFrame);
-    while (ret >= 0)
-    {
-        pkt->stream_index = video_st->index;
-        ret = avcodec_receive_packet(pCodecCtx, pkt);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-        {
-            return -1;
-        }
-        else if (ret < 0)
-        {
-            fprintf(stderr, "Error during encoding\n");
-            exit(1);
-        }
-        av_write_frame(pFormatCtx, pkt);
-    }
-    av_packet_unref(pkt);
-    /////// Encode //////////////// 
+    //Write body
+    av_write_frame(pFormatCtx, pkt);
+
     //Write Trailer
     av_write_trailer(pFormatCtx);
 
     printf("Encode Successful.\n");
 
-    if (video_st)
-    {
-        //avcodec_close(video_st->codec);
-        av_free(pictureFrame);
-        av_free(picture_buf);
-    }
-    //avio_close(pFormatCtx->pb);//Method 1
-    avformat_free_context(pFormatCtx);
-    fclose(in_file);
+    av_packet_unref(pkt);               //av_packet_alloc()
+    av_frame_free(&pictureFrame);       //av_frame_alloc()
+    avformat_free_context(pFormatCtx);  //avformat_alloc_context()
+
     return 0;
-    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -439,7 +365,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (!bsm_yuv420p_to_rgb24_v1(src_buffer, src_w, src_h, dst_buffer, dst_size))
+    if (!bsm_yuv420p_to_rgb24(src_buffer, src_w, src_h, dst_buffer, dst_size))
     {
         printf("formate convert failure\n");
         return -1;
@@ -452,7 +378,7 @@ int main(int argc, char* argv[])
     fclose(src_file);
     fclose(dst_file);
 #endif
-#if 0
+#if 1
     /**
     * 将rgb24格式数据转换成yuv420p格式
     */
@@ -503,10 +429,54 @@ int main(int argc, char* argv[])
 #endif
 
 #if 0
-#endif
+    /**
+    * save YUV420 to jpeg
+    */
     const char* OutputFileName = "D:\\VSProject\\image_encoder\\x64\\Debug\\a.jpg";
     const char* InputFileName = "D:\\VSProject\\image_encoder\\x64\\Debug\\a.yuv";
     int in_w = 640, in_h = 480;
-    EncodeYUVToJPEG(InputFileName, OutputFileName, in_w, in_h);
-    return getchar();
+    //EncodeYUVToJPEG(InputFileName, OutputFileName, in_w, in_h);
+
+    uint8_t *buffer = NULL;
+    size_t buffer_size;
+
+    /* slurp file content into buffer */
+    int ret1 = av_file_map(InputFileName, &buffer, &buffer_size, 0, NULL);
+    if (ret1 < 0)
+    {
+        printf("read input file failure\n");
+    }
+
+    if (!bsm_yuv420p_to_jpeg(buffer, OutputFileName, in_w, in_h))
+    {
+        printf("convert to jpeg failure\n");
+    }
+
+    return 1;
+#endif
+
+#if 0
+    const char* OutputFileName = "D:\\VSProject\\image_encoder\\x64\\Debug\\a.jpg";
+    const char* InputFileName = "D:\\VSProject\\image_encoder\\x64\\Debug\\a_rgb24.rgb";
+    int in_w = 640, in_h = 480;
+    //EncodeYUVToJPEG(InputFileName, OutputFileName, in_w, in_h);
+
+    uint8_t *buffer = NULL;
+    size_t buffer_size;
+
+    /* slurp file content into buffer */
+    int ret1 = av_file_map(InputFileName, &buffer, &buffer_size, 0, NULL);
+    if (ret1 < 0)
+    {
+        printf("read input file failure\n");
+    }
+
+    if (!bsm_rgb24_to_jpeg(buffer, OutputFileName, in_w, in_h))
+    {
+        printf("convert to jpeg failure\n");
+    }
+
+    return 1;
+#endif
+
 }
