@@ -329,7 +329,7 @@ int EncodeYUVToJPEG(const char* InputFileName, const char* OutputFileName, int i
 
 int main(int argc, char* argv[])
 {
-#if 0 
+#if 1 
     /**
     * 将yuv420p格式数据转换成rgb24格式
     */
@@ -378,7 +378,7 @@ int main(int argc, char* argv[])
     fclose(src_file);
     fclose(dst_file);
 #endif
-#if 1
+#if 0
     /**
     * 将rgb24格式数据转换成yuv420p格式
     */

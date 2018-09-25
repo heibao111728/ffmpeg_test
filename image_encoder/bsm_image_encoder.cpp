@@ -48,34 +48,9 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     const int src_w = src_width, src_h = src_height;
     const int dst_w = src_width, dst_h = src_height;
 
-    //av_get_bits_per_pixel() 返回每个像素点需要几个bit位来表示，由于此处格式是yuv420p，
-    //所以每个像素点需要12bit来表示。
-    int src_bpp = av_get_bits_per_pixel(av_pix_fmt_desc_get(src_pixfmt));
-    int dst_bpp = av_get_bits_per_pixel(av_pix_fmt_desc_get(dst_pixfmt));
+    AVFrame* srcFrame;  //编码前数据，如yuv420，rgb24等
+    AVFrame* dstFrame;  //编码前数据，如yuv420，rgb24等
 
-    //Structures, used by ffmpeg.
-    uint8_t *src_data[4];
-    int src_linesize[4];
-
-    uint8_t *dst_data[4];
-    int dst_linesize[4];
-
-    int ret = av_image_alloc(src_data, src_linesize, src_w, src_h, src_pixfmt, 1);
-    if (ret < 0)
-    {
-        printf("Could not allocate source image\n");
-        return -1;
-    }
-
-    ret = av_image_alloc(dst_data, dst_linesize, dst_w, dst_h, dst_pixfmt, 1);
-    if (ret < 0)
-    {
-        printf("Could not allocate destination image\n");
-        return -1;
-    }
-
-    //-----------------------------	
-    //Init Method 1
     struct SwsContext *img_convert_ctx;
     img_convert_ctx = sws_alloc_context();
 
@@ -92,131 +67,46 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     av_opt_set_int(img_convert_ctx, "dst_range", 1, 0);
     sws_init_context(img_convert_ctx, NULL, NULL);
 
-    switch (src_pixfmt)
+    srcFrame = av_frame_alloc();
+    if (NULL != srcFrame)
     {
-    case AV_PIX_FMT_GRAY8:
-    {
-        memcpy(src_data[0], pdata_src, src_w*src_h);
-        break;
-    }
-    case AV_PIX_FMT_YUV420P:
-    {
-        memcpy(src_data[0], pdata_src, src_w*src_h);                    //Y
-        memcpy(src_data[1], pdata_src + src_w*src_h, src_w*src_h / 4);      //U
-        memcpy(src_data[2], pdata_src + src_w*src_h * 5 / 4, src_w*src_h / 4);  //V
-        break;
-    }
-    case AV_PIX_FMT_YUV422P:
-    {
-        memcpy(src_data[0], pdata_src, src_w*src_h);                    //Y
-        memcpy(src_data[1], pdata_src + src_w*src_h, src_w*src_h / 2);      //U
-        memcpy(src_data[2], pdata_src + src_w*src_h * 3 / 2, src_w*src_h / 2);  //V
-        break;
-    }
-    case AV_PIX_FMT_YUV444P:
-    {
-        memcpy(src_data[0], pdata_src,  src_w*src_h);                    //Y
-        memcpy(src_data[1], pdata_src + src_w*src_h, src_w*src_h);        //U
-        memcpy(src_data[2], pdata_src + src_w*src_h * 2, src_w*src_h);      //V
-        break;
-    }
-    case AV_PIX_FMT_YUYV422:
-    {
-        memcpy(src_data[0], pdata_src, src_w*src_h * 2);                  //Packed
-        break;
-    }
-    case AV_PIX_FMT_RGB24:
-    {
-        memcpy(src_data[0], pdata_src, src_w*src_h * 3);                  //Packed
-        break;
-    }
-    default:
-    {
-        printf("Not Support Input Pixel Format.\n");
-        break;
-    }
+        srcFrame->width = src_w;
+        srcFrame->height = src_h;
+        srcFrame->format = AV_PIX_FMT_YUV420P;
     }
 
-    sws_scale(img_convert_ctx, src_data, src_linesize, 0, src_h, dst_data, dst_linesize);
+    if (av_frame_get_buffer(srcFrame, 1) < 0)
+    {
+        printf("get media buff failure.\n");
+        return false;
+    }
 
-    switch (dst_pixfmt)
-    {
-    case AV_PIX_FMT_GRAY8:
-    {
-        memcpy_s(pdata_dst, dst_size, dst_data[0], dst_w*dst_h);
-        break;
-    }
-    case AV_PIX_FMT_YUV420P:
-    {
-        //Y
-        memcpy_s(pdata_dst, dst_size, dst_data[0], dst_w*dst_h);
+    av_image_fill_arrays(srcFrame->data, srcFrame->linesize, pdata_src, AV_PIX_FMT_YUV420P, srcFrame->width, srcFrame->height, 1);
 
-        //U
-        memcpy_s(pdata_dst + dst_w*dst_h,
-            dst_size - dst_w*dst_h, 
-            dst_data[1], 
-            dst_w*dst_h / 4);
-        //V
-        memcpy_s(pdata_dst + dst_w*dst_h + dst_w*dst_h / 4,
-            dst_size - dst_w*dst_h - dst_w*dst_h / 4, 
-            dst_data[2], 
-            dst_w*dst_h / 4);
-        break;
-    }
-    case AV_PIX_FMT_YUV422P:
+    dstFrame = av_frame_alloc();
+    if (NULL != dstFrame)
     {
-        //fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);					//Y
-        //fwrite(dst_data[1], 1, dst_w*dst_h / 2, dst_file);				//U
-        //fwrite(dst_data[2], 1, dst_w*dst_h / 2, dst_file);				//V
+        dstFrame->width = src_w;
+        dstFrame->height = src_h;
+        dstFrame->format = AV_PIX_FMT_RGB24;
+    }
 
-        //Y
-        memcpy_s(pdata_dst, dst_size, dst_data[0], dst_w*dst_h);
-        //U
-        memcpy_s(pdata_dst + dst_w*dst_h, 
-            dst_size - dst_w*dst_h, 
-            dst_data[1], 
-            dst_w*dst_h / 2);
-        //V
-        memcpy_s(pdata_dst + dst_w*dst_h + dst_w*dst_h / 2, 
-            dst_size - dst_w*dst_h - dst_w*dst_h / 2, 
-            dst_data[2], dst_w*dst_h / 2);
-        break;
-    }
-    case AV_PIX_FMT_YUV444P:
+    //获取存储媒体数据空间
+    if (av_frame_get_buffer(dstFrame, 1) < 0)
     {
-        //fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);                 //Y
-        //fwrite(dst_data[1], 1, dst_w*dst_h, dst_file);                 //U
-        //fwrite(dst_data[2], 1, dst_w*dst_h, dst_file);                 //V
-        //Y
-        memcpy_s(pdata_dst, dst_size, dst_data[0], dst_w*dst_h);
-        //U
-        memcpy_s(pdata_dst + dst_w*dst_h, dst_size - dst_w*dst_h, dst_data[1], dst_w*dst_h);
-        //V
-        memcpy_s(pdata_dst + dst_w*dst_h + dst_w*dst_h, dst_size - dst_w*dst_h - dst_w*dst_h, dst_data[2], dst_w*dst_h);
-        break;
+        printf("get media buff failure.\n");
+        return false;
     }
-    case AV_PIX_FMT_YUYV422:
-    {
-        //fwrite(dst_data[0], 1, dst_w*dst_h * 2, dst_file);               //Packed
-        memcpy_s(pdata_dst, dst_size, dst_data[0], dst_w*dst_h * 2);
-        break;
-    }
-    case AV_PIX_FMT_RGB24:
-    {
-        memcpy_s(pdata_dst, dst_size, dst_data[0], dst_w*dst_h * 3);
-        break;
-    }
-    default:
-    {
-        printf("Not Support Output Pixel Format.\n");
-        break;
-    }
-    }
+
+    //do transform
+    sws_scale(img_convert_ctx, srcFrame->data, srcFrame->linesize, 0, dstFrame->height, dstFrame->data, dstFrame->linesize);
+
+    av_image_copy_to_buffer(pdata_dst, dst_size, dstFrame->data, dstFrame->linesize, AV_PIX_FMT_RGB24, dstFrame->width, dstFrame->height, 1);
+
+    av_frame_free(&srcFrame);
+    av_frame_free(&dstFrame);
 
     sws_freeContext(img_convert_ctx);
-
-    av_freep(&src_data[0]);
-    av_freep(&dst_data[0]);
 
     return true;
 }
