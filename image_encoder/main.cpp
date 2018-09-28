@@ -36,6 +36,7 @@ int main(int argc, char* argv[])
     /** 
     * 将yuv420p格式数据转换成rgb24格式
     */
+
     int src_w = 640;
     int src_h = 480;
 
@@ -80,6 +81,9 @@ int main(int argc, char* argv[])
 
     fclose(src_file);
     fclose(dst_file);
+	/**
+	*	this is in branch only
+	*/
 #endif
 #if 0
     /**
@@ -203,8 +207,6 @@ int main(int argc, char* argv[])
     //av_file_unmap(buffer, buffer_size);
 
     return 0;
-	
-
 
 #endif
 
