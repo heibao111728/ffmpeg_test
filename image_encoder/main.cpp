@@ -33,9 +33,9 @@ extern "C"
 int main(int argc, char* argv[])
 {
 #if 0 
-    /**
-    * 将yuv420p格式数据转换成rgb24格式
-    */
+    // "//" in dev branch
+    // 将yuv420p格式数据转换成rgb24格式
+    //
     int src_w = 640;
     int src_h = 480;
 
@@ -203,6 +203,10 @@ int main(int argc, char* argv[])
     //av_file_unmap(buffer, buffer_size);
 
     return 0;
+	
+	/**
+	*	this is in branch only
+	*/
 
 #endif
 
