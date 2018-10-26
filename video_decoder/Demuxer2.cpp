@@ -39,9 +39,7 @@ int CDemuxer2::find_next_hx_str(unsigned char* source, int source_length, unsign
 
 int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
 {
-    int ps_packet_header_size;
     int ps_packet_header_stuffed_size;
-
     int pes_system_header_header_length;
     int pes_program_stream_map_length;
     int pes_video_h264_packet_size;
@@ -53,8 +51,8 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
     ps_packet_header* ps_head = NULL;
     pes_system_header_packet_header_t* pes_system_header;
     pes_program_stream_map_packet_header_t* pes_psm_header;
-    pes_video_h264_packet_header_t* pes_video_h264_packet_header;
-    pes_audio_packet_header_t* pes_audio_packet_header;
+    pes_media_packet_header_t* pes_video_h264_packet_header;
+    pes_media_packet_header_t* pes_audio_packet_header;
 
     unsigned char* next_pes_packet = NULL;
 
@@ -66,12 +64,13 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
         && packet[2] == 0x01
         && packet[3] == 0xba)
     {
-        ps_head = (ps_packet_header*)packet;
+        ps_head = (ps_packet_header_t*)packet;
 
-        ps_packet_header_size = sizeof(ps_packet_header);
-        ps_packet_header_stuffed_size = ps_head->Buf2 & 0x07;
+        ps_packet_header_stuffed_size = ps_head->pack_stuffing_length & 0x07;
 
-        packet_processed_length += sizeof(ps_packet_header) + ps_packet_header_stuffed_size;
+        //+14的原因是表示填充数据的长度位是PS包头部的第14个字节的后3位说明。
+        //不使用sizeof计算PS包头部长度的原因是结构体内部会发生自动对齐，导致该结果不准确。
+        packet_processed_length += 14 + ps_packet_header_stuffed_size;
 
         next_pes_packet = packet + packet_processed_length;
 
@@ -125,14 +124,14 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
                 && next_pes_packet[3] == 0xe0)
             {
                 //contain video es stream
-                pes_video_h264_packet_header = (pes_video_h264_packet_header_t*)next_pes_packet;
+                pes_video_h264_packet_header = (pes_media_packet_header_t*)next_pes_packet;
 
                 //littel_endian_size_u tmp_size;
                 tmp_size.byte[0] = pes_video_h264_packet_header->packet_size.byte[1];
                 tmp_size.byte[1] = pes_video_h264_packet_header->packet_size.byte[0];
 
                 pes_video_h264_packet_size = tmp_size.length;
-                pes_video_h264_packet_stuffed_size = pes_video_h264_packet_header->pes_packet_header_stuff_size;
+                pes_video_h264_packet_stuffed_size = pes_video_h264_packet_header->PES_header_data_length;
 
                 // +9 的原因是pes_video_h264_packet_stuffed_size之前还有9个字节的头部数据
                 // +6 的原因是pes包的总长度是在头部之后第6个字节处得到的。
@@ -151,7 +150,7 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
                 && next_pes_packet[3] == 0xc0)
             {
                 //contain audio es stream
-                pes_audio_packet_header = (pes_audio_packet_header_t*)next_pes_packet;
+                pes_audio_packet_header = (pes_media_packet_header_t*)next_pes_packet;
             }
             else
             {
@@ -165,8 +164,6 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
     {
         return 0;
     }
-
-
 
     return packet_processed_length;
 }
