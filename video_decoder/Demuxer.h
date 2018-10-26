@@ -36,6 +36,10 @@ extern "C"
 
 #define MAX_FILE_NAME_LENGTH 60
 
+/**
+*   demux ps stream to es stream, using ffmpeg.
+*/
+
 class CDemuxer
 {
 public:
