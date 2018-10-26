@@ -117,10 +117,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Demuxer.cpp" />
+    <ClCompile Include="Demuxer2.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Demuxer.h" />
+    <ClInclude Include="Demuxer2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
