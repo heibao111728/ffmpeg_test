@@ -3,8 +3,11 @@
 
 #include <fstream>
 
-#define MAX_BUFFER_SIZE (8 * 1024 * 1024)
+#define MAX_BUFFER_SIZE (1024 * 1024)
 #define MAX_FILENAME_LENGTH (60)
+
+//logger
+#define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 // PES 包stream_id 之后的两个字节中存放该PES包的长度
 typedef union littel_endian_size
