@@ -191,7 +191,8 @@ void CDemuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLen)
 
 int CDemuxer2::do_demux()
 {
-    int buffer_size = MAX_BUFFER_SIZE;
+    int buffer_capacity = MAX_BUFFER_SIZE;  //buffer 总容量
+    int buffer_size = 0;      //buffer 中当前数据大小
     int processed_size = 0;             //已经解析完的缓存数据大小
     int buffer_left_size = 0;          //缓存区剩余大小
 
@@ -232,20 +233,18 @@ int CDemuxer2::do_demux()
             processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
 
             next_ps_packet_offset += ps_packet_length;
-            buffer_left_size = processed_size;
+            //buffer_left_size = processed_size;
         }
         else
         {
             //查找失败
-            if (0 == buffer_left_size)
+            if (0 == processed_size && (buffer_size == buffer_capacity))
             {
                 //缓冲区太小
                 LOG("buffer is too small.\n");
                 return -1;
             }
-
-            else if ((0 < buffer_left_size)
-                    && (buffer_left_size <= buffer_size))
+            else 
             {
                 //缓冲区足够，缓冲区中剩余的数据不足一整个PS packet， 需要重新读取文件
                 if (is_end_of_file)
@@ -263,13 +262,15 @@ int CDemuxer2::do_demux()
                 memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
                 memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
-                processed_size = 0;
                 next_ps_packet_offset = 0;
+                buffer_left_size += processed_size;
+                processed_size = 0;
 
                 //第二步：读取文件数据将缓存区填满。
                 read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, m_pf_ps_file);
-                buffer_left_size -= read_size;
+                buffer_size = read_size;
 
+                buffer_left_size -= read_size;
                 if (buffer_left_size > 0)
                 {
                     LOG("end of file.\n");
@@ -277,6 +278,10 @@ int CDemuxer2::do_demux()
                     continue;
                 }
             }
+            //else
+            //{
+            //    LOG("haha");
+            //}
         }
     } while (true);
 
