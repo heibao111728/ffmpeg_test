@@ -64,9 +64,9 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
         && packet[2] == 0x01
         && packet[3] == 0xba)
     {
-        ps_head = (ps_packet_header_t*)packet;
-
-        ps_packet_header_stuffed_size = ps_head->pack_stuffing_length & 0x07;
+        //ps_head = (ps_packet_header_t*)packet;
+        //从ps包头第14个字节的最后3位获取头部填充数据的长度
+        ps_packet_header_stuffed_size = packet[13] & 0x07;
 
         //+14的原因是表示填充数据的长度位是PS包头部的第14个字节的后3位说明。
         //不使用sizeof计算PS包头部长度的原因是结构体内部会发生自动对齐，导致该结果不准确。
@@ -193,7 +193,7 @@ int CDemuxer2::do_demux()
 {
     int buffer_size = MAX_BUFFER_SIZE;
     int processed_size = 0;             //已经解析完的缓存数据大小
-    int read_buffer_left_size = 0;          //缓存区剩余大小
+    int buffer_left_size = 0;          //缓存区剩余大小
 
     unsigned char* stream_data_buf = NULL;
     unsigned char* tmp_data_buf = NULL;
@@ -217,7 +217,7 @@ int CDemuxer2::do_demux()
 
     int next_ps_packet_offset = 0;
 
-    read_buffer_left_size = MAX_BUFFER_SIZE;
+    buffer_left_size = MAX_BUFFER_SIZE;
 
     bool is_end_of_file = false;
 
@@ -232,35 +232,50 @@ int CDemuxer2::do_demux()
             processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
 
             next_ps_packet_offset += ps_packet_length;
-            read_buffer_left_size = processed_size;
+            buffer_left_size = processed_size;
         }
         else
         {
-            //查找失败，文件已经读完
-            if (is_end_of_file)
+            //查找失败
+            if (0 == buffer_left_size)
             {
-                //处理最后缓存中的数据, 如果不做处理则丢失最后一个PS包数据
-                deal_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
-                break;
+                //缓冲区太小
+                LOG("buffer is too small.\n");
+                return -1;
             }
 
-            //查找失败，但文件未读完，则继续读文件
-            //第一步：将缓存中剩余数据移动到缓存最前端；
-            memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-            memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
-
-            memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-            memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
-
-            processed_size = 0;
-            next_ps_packet_offset = 0;
-
-            //第二步：读取文件数据将缓存区填满。
-            read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - read_buffer_left_size), read_buffer_left_size, 1, read_buffer_left_size, m_pf_ps_file);
-            if (read_buffer_left_size > read_size)
+            else if ((0 < buffer_left_size)
+                    && (buffer_left_size <= buffer_size))
             {
-                is_end_of_file = true;
-                continue;
+                //缓冲区足够，缓冲区中剩余的数据不足一整个PS packet， 需要重新读取文件
+                if (is_end_of_file)
+                {
+                    //处理最后缓存中的数据, 如果不做处理则丢失最后一个PS包数据
+                    deal_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+                    break;
+                }
+
+                //查找失败，但文件未读完，则继续读文件
+                //第一步：将缓存中剩余数据移动到缓存最前端；
+                memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+
+                memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
+
+                processed_size = 0;
+                next_ps_packet_offset = 0;
+
+                //第二步：读取文件数据将缓存区填满。
+                read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, m_pf_ps_file);
+                buffer_left_size -= read_size;
+
+                if (buffer_left_size > 0)
+                {
+                    LOG("end of file.\n");
+                    is_end_of_file = true;
+                    continue;
+                }
             }
         }
     } while (true);
