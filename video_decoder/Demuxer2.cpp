@@ -278,10 +278,6 @@ int CDemuxer2::do_demux()
                     continue;
                 }
             }
-            //else
-            //{
-            //    LOG("haha");
-            //}
         }
     } while (true);
 
