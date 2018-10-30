@@ -157,6 +157,11 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
                 // bad data
                 break;
             }
+            if (packet_total_length - packet_processed_length < 0)
+            {
+                LOG("error, please check if src ps file formate is right\n");
+                return packet_total_length;
+            }
         }
 
     }
