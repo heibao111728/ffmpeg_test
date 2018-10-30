@@ -64,9 +64,9 @@ int CDemuxer2::deal_ps_packet(unsigned char * packet, int length)
         && packet[2] == 0x01
         && packet[3] == 0xba)
     {
-        ps_head = (ps_packet_header_t*)packet;
-
-        ps_packet_header_stuffed_size = ps_head->pack_stuffing_length & 0x07;
+        //ps_head = (ps_packet_header_t*)packet;
+        //从ps包头第14个字节的最后3位获取头部填充数据的长度
+        ps_packet_header_stuffed_size = packet[13] & 0x07;
 
         //+14的原因是表示填充数据的长度位是PS包头部的第14个字节的后3位说明。
         //不使用sizeof计算PS包头部长度的原因是结构体内部会发生自动对齐，导致该结果不准确。

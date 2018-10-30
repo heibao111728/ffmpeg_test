@@ -95,18 +95,26 @@ typedef struct pes_media_packet_header
 typedef struct ps_packet_header
 {
     unsigned char start_code[4];                            // '0x00 00 01 ba', 32 bit, 4 byte
-    unsigned int fix_code : 2;                              // must be '0x 01'
-    unsigned int system_clock_reference_base_32_30_ : 3;
-    unsigned int marker_bit_1 : 1;
-    unsigned int system_clock_reference_base_29_15_ : 15;
-    unsigned int marker_bit_2 : 1;                           // 52 bit
-    unsigned int system_clock_reference_base_14_0_ : 15;
-    unsigned int marker_bit_3 : 1;                           // 70 bit
-    unsigned int system_clock_reference_extension : 9;
-    unsigned int marker_bit_4 : 1;                           // 80 bit,  10 Byte
+
+    unsigned short fix_code : 2;                              // must be '0x 01'
+    unsigned short system_clock_reference_base_32_30_ : 3;
+    unsigned short marker_bit_1 : 1;
+    unsigned short : 0;                  // £”‡2bit”√0≤π∆Î
+
+    unsigned short system_clock_reference_base_29_15_ : 15;
+    unsigned short marker_bit_2 : 1;                           // 52 bit
+
+    unsigned short system_clock_reference_base_14_0_ : 15;
+    unsigned short marker_bit_3 : 1;                           // 70 bit
+
+    unsigned short system_clock_reference_extension : 9;
+    unsigned short marker_bit_4 : 1;                           // 80 bit,  10 Byte
+    unsigned short : 0;                 // £”‡6bit”√0≤π∆Î
+
     unsigned int program_mux_rate : 22;
     unsigned int marker_bit_5 : 1;
     unsigned int marker_bit_6 : 1;                           // 104 bit, 13 Byte
+
     unsigned char reserved : 5;
     unsigned char pack_stuffing_length : 3;                 // 112 bit, 14 Byte
 }ps_packet_header_t;

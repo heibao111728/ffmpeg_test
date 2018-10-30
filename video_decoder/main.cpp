@@ -23,8 +23,8 @@ int main(int argc, char* argv[])
     int length_of_ps_header;
     length_of_ps_header = sizeof(ps_packet_header_t);
 
-    ps_demuxer.setup_src_ps_file("E://tmp1.ps");
-    ps_demuxer.setup_dst_es_video_file("E://tmp1_bsm.h264");
+    ps_demuxer.setup_src_ps_file("E://buf_mediaplay.ps");
+    ps_demuxer.setup_dst_es_video_file("E://buf_mediaplay.h264");
 
     if (ps_demuxer.open_src_ps_file())
     {
