@@ -196,10 +196,16 @@ void CDemuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLen)
 
 int CDemuxer2::do_demux()
 {
-    int buffer_capacity = MAX_BUFFER_SIZE;  //buffer 总容量
-    int buffer_size = 0;      //buffer 中当前数据大小
-    int processed_size = 0;             //已经解析完的缓存数据大小
-    int buffer_left_size = 0;          //缓存区剩余大小
+    int buffer_capacity = MAX_BUFFER_SIZE;      //buffer 总容量
+    int buffer_size = 0;                        //buffer 中当前数据大小
+    int processed_size = 0;                     //已经解析完的缓存数据大小
+    int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
+    int read_size = 0;
+    int next_ps_packet_offset = 0;              //缓存中下一个ps包的位移
+
+    int ps_packet_length = 0;                   //ps包长度
+
+    bool is_end_of_file = false;
 
     unsigned char* stream_data_buf = NULL;
     unsigned char* tmp_data_buf = NULL;
@@ -210,22 +216,13 @@ int CDemuxer2::do_demux()
     tmp_data_buf = (unsigned char*)malloc(MAX_BUFFER_SIZE);
     memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
 
-    int read_size = 0;
-
     unsigned char ps_packet_start_code[4];
     ps_packet_start_code[0] = 0x00;
     ps_packet_start_code[1] = 0x00;
     ps_packet_start_code[2] = 0x01;
     ps_packet_start_code[3] = 0xba;
 
-    int ps_packet_length = 0;
-    int return_value = -1;
-
-    int next_ps_packet_offset = 0;
-
-    buffer_left_size = MAX_BUFFER_SIZE;
-
-    bool is_end_of_file = false;
+    //buffer_left_size = MAX_BUFFER_SIZE;
 
     do {
         ps_packet_length = find_next_hx_str(stream_data_buf + next_ps_packet_offset,
