@@ -165,7 +165,138 @@ bool CDemuxer::demux_ps_to_es()
     return true;
 }
 
+int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+{
+    int size = buf_size;
+    int ret;
+    // printf("read data %d\n", buf_size);
+    do
+    {
+        //ret = get_queue(&recvqueue, buf, buf_size);
+    } while (ret);
+    // printf("read data Ok %d\n", buf_size);
+    return size;
+}
+
+#define BUF_SIZE (8*1024*1024)
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
+
 bool CDemuxer::demux_ps_to_es_network()
 {
-    return true;
+
+    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
+
+    AVCodec *pVideoCodec, *pAudioCodec;
+    AVCodecContext *pVideoCodecCtx = NULL;
+    AVCodecContext *pAudioCodecCtx = NULL;
+    AVIOContext *av_io_context = NULL;
+    AVInputFormat *av_input_format = NULL;
+    AVFormatContext *av_format_context = NULL;
+
+    //step1:申请一个AVIOContext
+    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_read_data, NULL, NULL);
+    if (!av_io_context)
+    {
+        fprintf(stderr, "avio alloc failed!\n");
+        return -1;
+    }
+
+    //step2:探测流格式
+    if (av_probe_input_buffer(av_io_context, &av_input_format, "", NULL, 0, 0) < 0)
+    {
+        fprintf(stderr, "probe failed!\n");
+        return -1;
+    }
+    else
+    {
+        fprintf(stdout, "probe success!\n");
+        fprintf(stdout, "format: %s[%s]\n", av_input_format->name, av_input_format->long_name);
+    }
+
+    //step3:这一步很关键
+    av_format_context = avformat_alloc_context();
+    av_format_context->pb = av_io_context; 
+    
+    //step4:打开流
+    if (avformat_open_input(&av_format_context, "", av_input_format, NULL) < 0)
+    {
+        fprintf(stderr, "avformat open failed.\n");
+        return -1;
+    }
+    else
+    {
+        fprintf(stdout, "open stream success!\n");
+    }
+
+    //以下就和文件处理一致了
+    if (avformat_find_stream_info(av_format_context, NULL) < 0)
+    {
+        fprintf(stderr, "could not fine stream.\n");
+        return -1;
+    }
+    av_dump_format(av_format_context, 0, "", 0);
+    int videoindex = -1;
+    int audioindex = -1;
+    for (int i = 0; i < av_format_context->nb_streams; i++)
+    {
+        if ((av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+            (videoindex < 0))
+        {
+            videoindex = i;
+        }
+        if ((av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) &&
+            (audioindex < 0))
+        {
+            audioindex = i;
+        }
+    }
+    if (videoindex < 0 || audioindex < 0)
+    {
+        fprintf(stderr, "videoindex=%d, audioindex=%d\n", videoindex, audioindex);
+        return -1;
+    }
+    AVStream *pVst, *pAst;
+    pVst = av_format_context->streams[videoindex];
+    pAst = av_format_context->streams[audioindex];
+    pVideoCodecCtx = pVst->codec;
+    pAudioCodecCtx = pAst->codec;
+    pVideoCodec = avcodec_find_decoder(pVideoCodecCtx->codec_id);
+    if (!pVideoCodec)
+    {
+        fprintf(stderr, "could not find video decoder!\n");
+        return -1;
+    }
+
+    pAudioCodec = avcodec_find_decoder(pAudioCodecCtx->codec_id);
+    if (!pAudioCodec)
+    {
+        fprintf(stderr, "could not find audio decoder!\n");
+        return -1;
+    }
+
+    int got_picture;
+    uint8_t samples[AVCODEC_MAX_AUDIO_FRAME_SIZE * 3 / 2];
+    AVFrame *pframe = av_frame_alloc();
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    while (1)
+    {
+        if (av_read_frame(av_format_context, &pkt) >= 0)
+        {
+            if (pkt.stream_index == videoindex)
+            {
+                fprintf(stdout, "pkt.size=%d,pkt.pts=%lld, pkt.data=0x%x.", pkt.size, pkt.pts, (unsigned int)pkt.data);
+            }
+            else if (pkt.stream_index == audioindex)
+            {
+
+            }
+            av_free_packet(&pkt);
+        }
+    }
+
+    av_free(media_buffer);
+    av_frame_free(&pframe);
+
+    return 0;
 }
