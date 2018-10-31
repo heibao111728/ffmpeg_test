@@ -2,27 +2,27 @@
 
 void CDemuxer::set_input_ps_file(char* file_name)
 {
-    memset(input_ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_input_ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(input_ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_input_ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
     }
 }
 void CDemuxer::set_output_es_video_file(char* file_name)
 {
-    memset(output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(output_es_video_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
     }
 }
 
 void CDemuxer::set_output_es_audio_file(char* file_name)
 {
-    memset(output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(output_es_audio_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
     }
 }
 
@@ -50,7 +50,7 @@ bool CDemuxer::demux_ps_to_es()
     av_formate_context_input = avformat_alloc_context();
 
     //打开一个输入流，并读取头信息。
-    i_ret = avformat_open_input(&av_formate_context_input, input_ps_file_name, 0, NULL);
+    i_ret = avformat_open_input(&av_formate_context_input, m_input_ps_file_name, 0, NULL);
     if (i_ret < 0)
     {
         LOG("Open input file failed.");
@@ -66,7 +66,7 @@ bool CDemuxer::demux_ps_to_es()
     }
 
     // 获取输出文件格式信息
-    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, output_es_video_file_name);
+    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
     if (!av_formate_context_out_video)
     {
         LOG("Create output context failed.");
@@ -80,9 +80,9 @@ bool CDemuxer::demux_ps_to_es()
     // Open output file
     if (!(av_output_formate->flags & AVFMT_NOFILE))
     {
-        if (avio_open(&av_formate_context_out_video->pb, output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
+        if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
         {
-            LOG("Could not open output file '%s'", output_es_video_file_name);
+            LOG("Could not open output file '%s'", m_output_es_video_file_name);
             return false;
         }
     }
@@ -156,5 +156,10 @@ bool CDemuxer::demux_ps_to_es()
     avformat_free_context(av_formate_context_out_video);
     avformat_free_context(av_formate_context_input);
 
+    return true;
+}
+
+bool CDemuxer::demux_ps_to_es_network()
+{
     return true;
 }
