@@ -131,7 +131,6 @@ bool CDemuxer::demux_ps_to_es()
 
         if (videoindex == av_packet.stream_index)
         {
-            out_stream_es_video = av_formate_context_out_video->streams[0];
             LOG("Write Video Packet. size: %d\t pts: %d\n", av_packet.size, av_packet.pts);
         }
         else
@@ -151,6 +150,13 @@ bool CDemuxer::demux_ps_to_es()
         av_packet_unref(&av_packet);
 
         ++frame_index;
+    }
+
+    // Write file trailer
+    if (av_write_trailer(av_formate_context_out_video) != 0)
+    {
+        LOG("Error occurred when writing file trailer.");
+        return false;
     }
 
     avformat_free_context(av_formate_context_out_video);
