@@ -55,10 +55,12 @@ public:
     */
     bool demux_ps_to_es();
 
+    bool demux_ps_to_es_network();
+
 private:
-    char input_ps_file_name[MAX_FILE_NAME_LENGTH];
-    char output_es_video_file_name[MAX_FILE_NAME_LENGTH];
-    char output_es_audio_file_name[MAX_FILE_NAME_LENGTH];
+    char m_input_ps_file_name[MAX_FILE_NAME_LENGTH];
+    char m_output_es_video_file_name[MAX_FILE_NAME_LENGTH];
+    char m_output_es_audio_file_name[MAX_FILE_NAME_LENGTH];
 };
 
 #endif // !__DEMUXER_H__
