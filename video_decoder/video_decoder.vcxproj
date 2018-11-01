@@ -86,7 +86,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)jthread;$(SolutionDir)jrtplib\include;$(SolutionDir)ffmpeg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -246,9 +246,6 @@
   <ItemGroup>
     <ProjectReference Include="..\jrtplib\jrtplib.vcxproj">
       <Project>{f96944bb-3609-45c0-91f2-a5c83b17d583}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\jthread\jthread.vcxproj">
-      <Project>{ad9ff4be-9a10-4f08-82f9-4b96093e2b02}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
