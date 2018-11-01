@@ -7,10 +7,26 @@ DTS（Decoding Time Stamp）：即解码时间戳，这个时间戳的意义在于告诉播放器该在什么
 PTS（Presentation Time Stamp）：即显示时间戳，这个时间戳用来告诉播放器该在什么时候显示这一帧的数据。
 */
 
+int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+{
+    int size = buf_size;
+    int ret = 1;
+    // printf("read data %d\n", buf_size);
+    do
+    {
+        //ret = get_queue(&recvqueue, buf, buf_size);
+    } while (ret);
+    // printf("read data Ok %d\n", buf_size);
+    return size;
+}
+
 int main(int argc, char* argv[])
 {
 #if 1
     CDemuxer demuxer;
+
+    CDemuxer::setup_callback_function(callback_read_data);
+
     demuxer.set_input_ps_file("E://success_data//tmp1.ps");
     demuxer.set_output_es_video_file("E://success_data//tmp1.h264");
 
