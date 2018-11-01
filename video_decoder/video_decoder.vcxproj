@@ -74,6 +74,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>D:\VSProject\ffmpeg_test\jrtplib\include;D:\VSProject\ffmpeg_test\jthread;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -116,6 +117,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\RtpReceiver\RtpReceiver.cpp" />
     <ClCompile Include="Demuxer.cpp" />
     <ClCompile Include="Demuxer2.cpp" />
     <ClCompile Include="main.cpp" />
@@ -234,6 +236,7 @@
     <ClInclude Include="..\ffmpeg\include\libswresample\version.h" />
     <ClInclude Include="..\ffmpeg\include\libswscale\swscale.h" />
     <ClInclude Include="..\ffmpeg\include\libswscale\version.h" />
+    <ClInclude Include="..\RtpReceiver\RtpReceiver.h" />
     <ClInclude Include="Demuxer.h" />
     <ClInclude Include="Demuxer2.h" />
   </ItemGroup>

@@ -165,7 +165,166 @@ bool CDemuxer::demux_ps_to_es()
     return true;
 }
 
+int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+{
+    int size = buf_size;
+    int ret;
+    // printf("read data %d\n", buf_size);
+    do
+    {
+        //ret = get_queue(&recvqueue, buf, buf_size);
+    } while (ret);
+    // printf("read data Ok %d\n", buf_size);
+    return size;
+}
+
+#define BUF_SIZE (8*1024*1024)
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
+
 bool CDemuxer::demux_ps_to_es_network()
 {
-    return true;
+
+    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
+
+    AVIOContext *av_io_context = NULL;
+    AVInputFormat *av_input_format = NULL;
+    AVFormatContext *av_format_context = NULL;
+
+    AVFormatContext *av_formate_context_out_video = NULL;
+    AVOutputFormat *av_output_formate = NULL;
+    AVStream *in_stream_ps = NULL;
+    AVPacket av_packet;
+
+    int videoindex = -1;
+    int audioindex = -1;
+    int frame_index = 0;
+
+    //step1:申请一个AVIOContext
+    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_read_data, NULL, NULL);
+    if (!av_io_context)
+    {
+        fprintf(stderr, "avio alloc failed!\n");
+        return -1;
+    }
+
+    //step2:探测流格式
+    if (av_probe_input_buffer(av_io_context, &av_input_format, "", NULL, 0, 0) < 0)
+    {
+        fprintf(stderr, "probe failed!\n");
+        return -1;
+    }
+    else
+    {
+        fprintf(stdout, "probe success!\n");
+        fprintf(stdout, "format: %s[%s]\n", av_input_format->name, av_input_format->long_name);
+    }
+
+    //step3:这一步很关键
+    av_format_context = avformat_alloc_context();
+    av_format_context->pb = av_io_context; 
+    
+    //step4:打开流
+    if (avformat_open_input(&av_format_context, "", av_input_format, NULL) < 0)
+    {
+        fprintf(stderr, "avformat open failed.\n");
+        return -1;
+    }
+    else
+    {
+        fprintf(stdout, "open stream success!\n");
+    }
+
+    //以下就和文件处理一致了
+
+    // 获取输出文件格式信息
+    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
+    if (!av_formate_context_out_video)
+    {
+        LOG("Create output context failed.");
+        return false;
+    }
+    else
+    {
+        av_output_formate = av_formate_context_out_video->oformat;
+    }
+
+    // Open output file
+    if (!(av_output_formate->flags & AVFMT_NOFILE))
+    {
+        if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
+        {
+            LOG("Could not open output file '%s'", m_output_es_video_file_name);
+            return false;
+        }
+    }
+
+    // Write file header
+    if (avformat_write_header(av_formate_context_out_video, NULL) < 0)
+    {
+        LOG("Error occurred when opening video output file.");
+        return false;
+    }
+
+    //获取视频流索引
+    for (int i = 0; i < av_format_context->nb_streams; ++i)
+    {
+        in_stream_ps = av_format_context->streams[i];
+
+        if (AVMEDIA_TYPE_VIDEO == in_stream_ps->codecpar->codec_type)
+        {
+            videoindex = i;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    frame_index = 0;
+
+    while (1)
+    {
+        // Get an AVPacket
+        if (av_read_frame(av_format_context, &av_packet) < 0)
+        {
+            LOG("end of file!\n");
+            break;
+        }
+
+        if (videoindex == av_packet.stream_index)
+        {
+            LOG("Write Video Packet. size: %d\t pts: %d\n", av_packet.size, av_packet.pts);
+        }
+        else
+        {
+            continue;
+        }
+
+        // Write
+        if (av_interleaved_write_frame(av_formate_context_out_video, &av_packet) < 0)
+        {
+            LOG("Error when write_frame.");
+            break;
+        }
+
+        LOG("Write %8d frames to output file.", frame_index);
+
+        av_packet_unref(&av_packet);
+
+        ++frame_index;
+    }
+
+    // Write file trailer
+    if (av_write_trailer(av_formate_context_out_video) != 0)
+    {
+        LOG("Error occurred when writing file trailer.");
+        return false;
+    }
+
+    av_free(media_buffer);
+    avio_context_free(&av_io_context);
+    avformat_free_context(av_format_context);
+    avformat_free_context(av_formate_context_out_video);
+
+    return 0;
 }

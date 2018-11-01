@@ -40,6 +40,12 @@
     <Filter Include="Header Files\ffmpeg4_0\libswscale">
       <UniqueIdentifier>{8e9ee402-b3d9-4c14-9cf7-6f935d5e4619}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\rtp_receiver">
+      <UniqueIdentifier>{c7fd818d-51c4-4ce2-9821-3aa47a94dc7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rtp_receiver">
+      <UniqueIdentifier>{fbd7b2ca-688e-46c8-882f-4184f3a2d882}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -50,6 +56,9 @@
     </ClCompile>
     <ClCompile Include="Demuxer2.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RtpReceiver\RtpReceiver.cpp">
+      <Filter>Source Files\rtp_receiver</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -397,6 +406,9 @@
     </ClInclude>
     <ClInclude Include="..\ffmpeg\include\libswscale\version.h">
       <Filter>Header Files\ffmpeg4_0\libswscale</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RtpReceiver\RtpReceiver.h">
+      <Filter>Header Files\rtp_receiver</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
