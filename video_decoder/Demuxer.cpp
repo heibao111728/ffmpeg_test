@@ -186,12 +186,18 @@ bool CDemuxer::demux_ps_to_es_network()
 
     uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
-    AVCodec *pVideoCodec, *pAudioCodec;
-    AVCodecContext *pVideoCodecCtx = NULL;
-    AVCodecContext *pAudioCodecCtx = NULL;
     AVIOContext *av_io_context = NULL;
     AVInputFormat *av_input_format = NULL;
     AVFormatContext *av_format_context = NULL;
+
+    AVFormatContext *av_formate_context_out_video = NULL;
+    AVOutputFormat *av_output_formate = NULL;
+    AVStream *in_stream_ps = NULL;
+    AVPacket av_packet;
+
+    int videoindex = -1;
+    int audioindex = -1;
+    int frame_index = 0;
 
     //step1:申请一个AVIOContext
     av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_read_data, NULL, NULL);
@@ -229,74 +235,96 @@ bool CDemuxer::demux_ps_to_es_network()
     }
 
     //以下就和文件处理一致了
-    if (avformat_find_stream_info(av_format_context, NULL) < 0)
+
+    // 获取输出文件格式信息
+    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
+    if (!av_formate_context_out_video)
     {
-        fprintf(stderr, "could not fine stream.\n");
-        return -1;
+        LOG("Create output context failed.");
+        return false;
     }
-    av_dump_format(av_format_context, 0, "", 0);
-    int videoindex = -1;
-    int audioindex = -1;
-    for (int i = 0; i < av_format_context->nb_streams; i++)
+    else
     {
-        if ((av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
-            (videoindex < 0))
+        av_output_formate = av_formate_context_out_video->oformat;
+    }
+
+    // Open output file
+    if (!(av_output_formate->flags & AVFMT_NOFILE))
+    {
+        if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
+        {
+            LOG("Could not open output file '%s'", m_output_es_video_file_name);
+            return false;
+        }
+    }
+
+    // Write file header
+    if (avformat_write_header(av_formate_context_out_video, NULL) < 0)
+    {
+        LOG("Error occurred when opening video output file.");
+        return false;
+    }
+
+    //获取视频流索引
+    for (int i = 0; i < av_format_context->nb_streams; ++i)
+    {
+        in_stream_ps = av_format_context->streams[i];
+
+        if (AVMEDIA_TYPE_VIDEO == in_stream_ps->codecpar->codec_type)
         {
             videoindex = i;
         }
-        if ((av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) &&
-            (audioindex < 0))
+        else
         {
-            audioindex = i;
+            break;
         }
     }
-    if (videoindex < 0 || audioindex < 0)
-    {
-        fprintf(stderr, "videoindex=%d, audioindex=%d\n", videoindex, audioindex);
-        return -1;
-    }
-    AVStream *pVst, *pAst;
-    pVst = av_format_context->streams[videoindex];
-    pAst = av_format_context->streams[audioindex];
-    pVideoCodecCtx = pVst->codec;
-    pAudioCodecCtx = pAst->codec;
-    pVideoCodec = avcodec_find_decoder(pVideoCodecCtx->codec_id);
-    if (!pVideoCodec)
-    {
-        fprintf(stderr, "could not find video decoder!\n");
-        return -1;
-    }
 
-    pAudioCodec = avcodec_find_decoder(pAudioCodecCtx->codec_id);
-    if (!pAudioCodec)
-    {
-        fprintf(stderr, "could not find audio decoder!\n");
-        return -1;
-    }
+    frame_index = 0;
 
-    int got_picture;
-    uint8_t samples[AVCODEC_MAX_AUDIO_FRAME_SIZE * 3 / 2];
-    AVFrame *pframe = av_frame_alloc();
-    AVPacket pkt;
-    av_init_packet(&pkt);
     while (1)
     {
-        if (av_read_frame(av_format_context, &pkt) >= 0)
+        // Get an AVPacket
+        if (av_read_frame(av_format_context, &av_packet) < 0)
         {
-            if (pkt.stream_index == videoindex)
-            {
-                fprintf(stdout, "pkt.size=%d,pkt.pts=%lld, pkt.data=0x%x.", pkt.size, pkt.pts, (unsigned int)pkt.data);
-            }
-            else if (pkt.stream_index == audioindex)
-            {
-
-            }
-            av_free_packet(&pkt);
+            LOG("end of file!\n");
+            break;
         }
+
+        if (videoindex == av_packet.stream_index)
+        {
+            LOG("Write Video Packet. size: %d\t pts: %d\n", av_packet.size, av_packet.pts);
+        }
+        else
+        {
+            continue;
+        }
+
+        // Write
+        if (av_interleaved_write_frame(av_formate_context_out_video, &av_packet) < 0)
+        {
+            LOG("Error when write_frame.");
+            break;
+        }
+
+        LOG("Write %8d frames to output file.", frame_index);
+
+        av_packet_unref(&av_packet);
+
+        ++frame_index;
+    }
+
+    // Write file trailer
+    if (av_write_trailer(av_formate_context_out_video) != 0)
+    {
+        LOG("Error occurred when writing file trailer.");
+        return false;
     }
 
     av_free(media_buffer);
-    av_frame_free(&pframe);
+    avio_context_free(&av_io_context);
+    avformat_free_context(av_format_context);
+    avformat_free_context(av_formate_context_out_video);
 
     return 0;
 }
