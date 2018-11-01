@@ -1,5 +1,7 @@
 #include "Demuxer.h"
 
+callback_get_network_stream_fp CDemuxer::callback_get_network_stream = NULL;
+
 void CDemuxer::set_input_ps_file(char* file_name)
 {
     memset(m_input_ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
@@ -165,18 +167,14 @@ bool CDemuxer::demux_ps_to_es()
     return true;
 }
 
-int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+
+
+void CDemuxer::setup_callback_function(callback_get_network_stream_fp func)
 {
-    int size = buf_size;
-    int ret = 1;
-    // printf("read data %d\n", buf_size);
-    do
-    {
-        //ret = get_queue(&recvqueue, buf, buf_size);
-    } while (ret);
-    // printf("read data Ok %d\n", buf_size);
-    return size;
+    callback_get_network_stream = func;
 }
+
+
 
 #define BUF_SIZE (8*1024*1024)
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
@@ -200,7 +198,7 @@ bool CDemuxer::demux_ps_to_es_network()
     int frame_index = 0;
 
     //step1:…Í«Î“ª∏ˆAVIOContext
-    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_read_data, NULL, NULL);
+    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_get_network_stream, NULL, NULL);
     if (!av_io_context)
     {
         fprintf(stderr, "avio alloc failed!\n");
