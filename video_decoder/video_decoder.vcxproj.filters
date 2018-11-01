@@ -57,9 +57,6 @@
     <ClCompile Include="Demuxer2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\RtpReceiver\RtpReceiver.cpp">
-      <Filter>Source Files\rtp_receiver</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Demuxer.h">
