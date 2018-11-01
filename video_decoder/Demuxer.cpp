@@ -168,7 +168,7 @@ bool CDemuxer::demux_ps_to_es()
 int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
 {
     int size = buf_size;
-    int ret;
+    int ret = 1;
     // printf("read data %d\n", buf_size);
     do
     {
