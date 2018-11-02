@@ -29,22 +29,33 @@ void write_media_data_to_file(char* file_name, void* pLog, int nLen)
 }
 
 int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
-{
-    LOG("hava receive data, data_length=%d\n", buf_size);
-    return CStreamManager::get_instance()->read_data(NULL, buf, buf_size);
-    
+{   
+    int data_length = 0;
+    data_length = CStreamManager::get_instance()->read_data(NULL, buf, buf_size);
+    if (0 < data_length)
+    {
+        LOG("hava receive data, data_length=%d\n", data_length);
+    }
+    return data_length;
 }
 
 int callback_get_ps_stream(void *opaque, uint8_t *buf, int data_length)
 {
-    LOG("hava receive data, data_length=%d\n", data_length);
-    return CStreamManager::get_instance()->write_data(buf, data_length);
+    int this_data_length = 0;
+    this_data_length = CStreamManager::get_instance()->write_data(buf, data_length);
+    if (0 < this_data_length)
+    {
+        LOG("write data, data_length=%d\n", this_data_length);
+    }
+    return this_data_length;
 }
 
 
 #define __MAX_BUFFER_SIZE (2 * 1024 * 1024)
 int main(int argc, char* argv[])
 {
+    WSADATA dat;
+    WSAStartup(MAKEWORD(2, 2), &dat);
 #if 0
     /**
     *   test CDemuxer, demux stream from file
@@ -96,7 +107,7 @@ int main(int argc, char* argv[])
 
     while (1)
     {
-        Sleep(1000);
+        Sleep(10);
     }
 
     //while (1)
