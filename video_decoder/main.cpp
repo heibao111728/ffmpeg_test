@@ -1,31 +1,53 @@
 #include "stdio.h"
 #include "Demuxer.h"
 #include "Demuxer2.h"
+#include "StreamManager\StreamManager.h"
+#include "RtpReceiver\RtpReceiver.h"
 
 /**
 DTS（Decoding Time Stamp）：即解码时间戳，这个时间戳的意义在于告诉播放器该在什么时候解码这一帧的数据。
 PTS（Presentation Time Stamp）：即显示时间戳，这个时间戳用来告诉播放器该在什么时候显示这一帧的数据。
 */
 
-int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+void write_media_data_to_file(char* file_name, void* pLog, int nLen)
 {
-    int size = buf_size;
-    int ret = 1;
-    // printf("read data %d\n", buf_size);
-    do
+    FILE* m_pLogFile = NULL ;
+    if (pLog != NULL && nLen > 0)
     {
-        //ret = get_queue(&recvqueue, buf, buf_size);
-    } while (ret);
-    // printf("read data Ok %d\n", buf_size);
-    return size;
+        if (NULL == m_pLogFile && strlen(file_name) > 0)
+        {
+            ::fopen_s(&m_pLogFile, file_name, "ab+");
+        }
+
+        if (m_pLogFile != NULL)
+        {
+            ::fwrite(pLog, nLen, 1, m_pLogFile);
+            ::fclose(m_pLogFile);
+            m_pLogFile = NULL;
+        }
+    }
 }
 
+int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+{
+    return CStreamManager::get_instance()->read_data(NULL, buf, buf_size);
+}
+
+int callback_get_ps_stream(void *opaque, uint8_t *buf, int data_length)
+{
+    return CStreamManager::get_instance()->write_data(buf, data_length);
+}
+
+
+#define __MAX_BUFFER_SIZE (2 * 1024 * 1024)
 int main(int argc, char* argv[])
 {
-#if 1
-    CDemuxer demuxer;
-
+#if 0
+    /**
+    *   test CDemuxer, demux stream from file
+    */
     CDemuxer::setup_callback_function(callback_read_data);
+    CDemuxer demuxer;
 
     demuxer.set_input_ps_file("E://success_data//tmp1.ps");
     demuxer.set_output_es_video_file("E://success_data//tmp1.h264");
@@ -34,6 +56,9 @@ int main(int argc, char* argv[])
 #endif
 
 #if 0
+    /**
+    *   test CDemuxer2, demux stream from file
+    */
     CDemuxer2 ps_demuxer;
 
     int length_of_ps_header;
@@ -50,4 +75,36 @@ int main(int argc, char* argv[])
     ps_demuxer.close_src_ps_file();
     return 0;
 #endif
+
+#if 1
+    /**
+    *   test CDemuxer, demux stream from RTP.
+    */
+
+    unsigned char* buffer = (unsigned char*)malloc(__MAX_BUFFER_SIZE);
+
+    CDemuxer::setup_callback_function(callback_read_data);
+    CDemuxer demuxer;
+
+    CRtpReceiver::setup_callback_function(callback_get_ps_stream, NULL, NULL, NULL);
+    CRtpReceiver rtp_recviver;
+
+    rtp_recviver.StartProc();
+
+    //while (1)
+    //{
+    //    if (0 < CStreamManager::get_instance()->read_data(NULL, buffer, __MAX_BUFFER_SIZE))
+    //    {
+    //        write_media_data_to_file("E://rtp_tmp1.ps", buffer, __MAX_BUFFER_SIZE);
+    //    } 
+    //}
+
+    //if (buffer)
+    //{
+    //    free(buffer);
+    //}
+
+    return 0;
+
+#endif 
 }

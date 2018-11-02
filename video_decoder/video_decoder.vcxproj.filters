@@ -19,6 +19,12 @@
     <Filter Include="Source Files\rtp_receiver">
       <UniqueIdentifier>{fbd7b2ca-688e-46c8-882f-4184f3a2d882}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\stream_manager">
+      <UniqueIdentifier>{df982f3f-a191-4ca7-ba72-c53248ecda59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\stream_manager">
+      <UniqueIdentifier>{d6f0e9e7-c584-4652-a92e-72245fdbb1f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -30,6 +36,12 @@
     <ClCompile Include="Demuxer2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\RtpReceiver\RtpReceiver.cpp">
+      <Filter>Source Files\rtp_receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\StreamManager\StreamManager.cpp">
+      <Filter>Source Files\stream_manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Demuxer.h">
@@ -40,6 +52,9 @@
     </ClInclude>
     <ClInclude Include="..\RtpReceiver\RtpReceiver.h">
       <Filter>Header Files\rtp_receiver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\StreamManager\StreamManager.h">
+      <Filter>Header Files\stream_manager</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
