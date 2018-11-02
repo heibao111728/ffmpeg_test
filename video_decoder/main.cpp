@@ -30,11 +30,14 @@ void write_media_data_to_file(char* file_name, void* pLog, int nLen)
 
 int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
 {
+    LOG("hava receive data, data_length=%d\n", buf_size);
     return CStreamManager::get_instance()->read_data(NULL, buf, buf_size);
+    
 }
 
 int callback_get_ps_stream(void *opaque, uint8_t *buf, int data_length)
 {
+    LOG("hava receive data, data_length=%d\n", data_length);
     return CStreamManager::get_instance()->write_data(buf, data_length);
 }
 
@@ -90,6 +93,11 @@ int main(int argc, char* argv[])
     CRtpReceiver rtp_recviver;
 
     rtp_recviver.StartProc();
+
+    while (1)
+    {
+        Sleep(1000);
+    }
 
     //while (1)
     //{

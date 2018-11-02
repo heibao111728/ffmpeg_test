@@ -92,8 +92,8 @@ public:
         callback_get_svac_stream_fp get_svac_stream);
 
 private:
-    RTPUDPv4TransmissionParams m_Transparams;
-    RTPSessionParams m_Sessparams;
+    //RTPUDPv4TransmissionParams m_Transparams;
+    //RTPSessionParams m_Sessparams;
     RTPSession m_RtpSession;
     char m_SdpInfo[SDP_SIZE] = { 0 };
     uint16_t m_mediaPort;
