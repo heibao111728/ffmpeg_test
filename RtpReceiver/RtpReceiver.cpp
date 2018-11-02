@@ -18,7 +18,7 @@ CRtpReceiver::CRtpReceiver(unsigned short rtpPort)
 {
     m_offset = 0;
     sprintf_s(m_ClientId, 20 + 1, "%s", "12345678901234567890");
-    sprintf_s(m_ClientIp, 20 + 1, "%s", "192.168.2.201");
+    sprintf_s(m_ClientIp, 20 + 1, "%s", "192.168.2.102");
 }
 
 CRtpReceiver::~CRtpReceiver()
@@ -97,13 +97,17 @@ void CRtpReceiver::ThreadProc(void* pParam)
 {
     CRtpReceiver* pThis = (CRtpReceiver*)pParam;
 
-    (pThis->m_Sessparams).SetOwnTimestampUnit(1.0 / 8000.0);
-    (pThis->m_Sessparams).SetAcceptOwnPackets(true);
-    (pThis->m_Transparams).SetPortbase(pThis->m_mediaPort);
+    RTPUDPv4TransmissionParams Transparams;
+    RTPSessionParams Sessparams;
+
+    Sessparams.SetOwnTimestampUnit(1.0 / 8000.0);
+    Sessparams.SetAcceptOwnPackets(true);
+
+    Transparams.SetPortbase(pThis->m_mediaPort);
 
     int status, i, num;
 
-    status = (pThis->m_RtpSession).Create((pThis->m_Sessparams), &(pThis->m_Transparams));
+    status = (pThis->m_RtpSession).Create(Sessparams, &Transparams);
 
     while (pThis->m_bThreadRuning)
     {
