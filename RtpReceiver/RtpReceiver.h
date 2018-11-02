@@ -13,7 +13,7 @@
 using namespace jrtplib;
 
 //MAX_FRAME_SIZE, 100M，保存获取到的完整视频帧，如果对于特高质量视频帧，可以将该空间扩大
-#define MAX_FRAME_SIZE 100 * 1024 * 1024 
+#define MAX_FRAME_SIZE 10 * 1024 
 #define SDP_SIZE 4 * 1024
 
 typedef struct rtp_header
@@ -42,6 +42,11 @@ enum PAYLOADTYPE
     H264    = 98,
     SVAC    = 99
 };
+
+typedef int(*callback_get_ps_stream_fp)(void *opaque, uint8_t *buf, int data_length);
+typedef int(*callback_get_h264_stream_fp)(void *opaque, uint8_t *buf, int data_length);
+typedef int(*callback_get_mpeg4_stream_fp)(void *opaque, uint8_t *buf, int data_length);
+typedef int(*callback_get_svac_stream_fp)(void *opaque, uint8_t *buf, int data_length);
 
 class CRtpReceiver
 {
@@ -80,6 +85,12 @@ public:
 
     void write_media_data_to_file(char* file_name, void* pLog, int nLen);
 
+    static void setup_callback_function(
+        callback_get_ps_stream_fp get_ps_stream,
+        callback_get_h264_stream_fp get_h264_stream,
+        callback_get_mpeg4_stream_fp get_mpeg4_stream,
+        callback_get_svac_stream_fp get_svac_stream);
+
 private:
     RTPUDPv4TransmissionParams m_Transparams;
     RTPSessionParams m_Sessparams;
@@ -94,8 +105,15 @@ private:
     bool m_isMarkerPacket;                  //完整帧rtp包头标记
 
     FILE* m_pLogFile;
+    char m_ClientId[20 + 1];
+    char m_ClientIp[20 + 1];
 
     //CDemuxer2 m_ps_demuxer;
+
+    static callback_get_ps_stream_fp callback_get_ps_stream;
+    static callback_get_h264_stream_fp callback_get_h264_stream;
+    static callback_get_mpeg4_stream_fp callback_get_mpeg4_stream;
+    static callback_get_svac_stream_fp callback_get_svac_stream;
 };
 
 #endif

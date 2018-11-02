@@ -2,20 +2,23 @@
 #include <process.h>
 //#include "DataRepository\include\DataRepository.h"
 
-extern char g_ClientIp[20]; //sip UA IP
-extern char g_ClientId[20]; //sip UA Id
-
 ////存放PS包的数据仓库，每一数据项存储一帧完整的PS包
 //extern CDataRepository<unsigned char*> g_PsPacketRepo;
 //
 ////存放ES包的数据仓库，每一数据项存储一帧完整的ES包
 //extern CDataRepository<unsigned char*> g_EsPacketRepo;
 
+callback_get_ps_stream_fp CRtpReceiver::callback_get_ps_stream = NULL;
+callback_get_h264_stream_fp CRtpReceiver::callback_get_h264_stream = NULL;
+callback_get_mpeg4_stream_fp CRtpReceiver::callback_get_mpeg4_stream = NULL;
+callback_get_svac_stream_fp CRtpReceiver::callback_get_svac_stream = NULL;
+
 CRtpReceiver::CRtpReceiver(unsigned short rtpPort)
     :m_mediaPort(rtpPort)
 {
     m_offset = 0;
-    //m_ps_demuxer.setup_dst_es_video_file("E:\\buf_es.h264");
+    sprintf_s(m_ClientId, 20 + 1, "%s", "12345678901234567890");
+    sprintf_s(m_ClientIp, 20 + 1, "%s", "192.168.2.201");
 }
 
 CRtpReceiver::~CRtpReceiver()
@@ -53,9 +56,9 @@ int CRtpReceiver::generateSdpInfo()
         "a=rtpmap:97 MPEG-4/90000\r\n"
         "y=%s\r\n"
         "f=\r\n",
-        g_ClientId,
-        g_ClientIp,
-        g_ClientIp,
+        m_ClientId,
+        m_ClientIp,
+        m_ClientIp,
         pMediaPort,
         pSsrc);
 
@@ -171,39 +174,43 @@ int CRtpReceiver::handlePacket(RTPPacket* packet)
 
 int CRtpReceiver::handlePsPacket(RTPPacket* packet)
 {
-    
-
-    if (NULL == packet)
+    if (packet && callback_get_ps_stream)
     {
-        return 0;
+        callback_get_ps_stream(NULL, packet->GetPayloadData(), packet->GetPayloadLength());
     }
+    return 0;
 
-    if (packet->HasMarker())   //完数据包, asMarker() Returns true is the marker bit was set
-    {
-        //接收到完整的一帧，存入视频帧队列，供解码器解析，并将空间释放，供下一帧数据存放。
-        memcpy(m_pFrame + m_offset, packet->GetPayloadData(), packet->GetPayloadLength());
-        m_frameSize = m_offset + packet->GetPayloadLength();
-        m_pTmpFrame = new uint8_t(m_frameSize);
+    //if (NULL == packet)
+    //{
+    //    return 0;
+    //}
 
-        //g_PsPacketRepo.putData(m_pTmpFrame);    //入PS包仓库
-        //memcpy(m_pTmpFrame, m_pFrame, m_frameSize);
+    //if (packet->HasMarker())   //完数据包, asMarker() Returns true is the marker bit was set
+    //{
+    //    //接收到完整的一帧，存入视频帧队列，供解码器解析，并将空间释放，供下一帧数据存放。
+    //    memcpy(m_pFrame + m_offset, packet->GetPayloadData(), packet->GetPayloadLength());
+    //    m_frameSize = m_offset + packet->GetPayloadLength();
+    //    m_pTmpFrame = new uint8_t(m_frameSize);
 
-        write_media_data_to_file("E://buf_mediaplay.ps", m_pFrame, m_frameSize);
-        //write_media_data_to_file("E://src_mediaplay.ps", packet->GetPayloadData(), packet->GetPayloadLength());
+    //    //g_PsPacketRepo.putData(m_pTmpFrame);    //入PS包仓库
+    //    //memcpy(m_pTmpFrame, m_pFrame, m_frameSize);
 
-        //deal_ps_packet(m_pFrame, m_frameSize);
-        //m_ps_demuxer.setup_dst_es_video_file("E://buf_mediaplay.es");
-        //m_ps_demuxer.deal_ps_packet(m_pFrame, m_frameSize);
+    //    write_media_data_to_file("E://buf_mediaplay.ps", m_pFrame, m_frameSize);
+    //    //write_media_data_to_file("E://src_mediaplay.ps", packet->GetPayloadData(), packet->GetPayloadLength());
 
-        m_frameSize = 0;
-        m_offset = 0;
-    }
-    else
-    {
-        memcpy(m_pFrame + m_offset, packet->GetPayloadData(), packet->GetPayloadLength());
-        m_offset += packet->GetPayloadLength();
-        //write_media_data_to_file("E://src_mediaplay.ps", packet->GetPayloadData(), packet->GetPayloadLength());
-    }
+    //    //deal_ps_packet(m_pFrame, m_frameSize);
+    //    //m_ps_demuxer.setup_dst_es_video_file("E://buf_mediaplay.es");
+    //    //m_ps_demuxer.deal_ps_packet(m_pFrame, m_frameSize);
+
+    //    m_frameSize = 0;
+    //    m_offset = 0;
+    //}
+    //else
+    //{
+    //    memcpy(m_pFrame + m_offset, packet->GetPayloadData(), packet->GetPayloadLength());
+    //    m_offset += packet->GetPayloadLength();
+    //    //write_media_data_to_file("E://src_mediaplay.ps", packet->GetPayloadData(), packet->GetPayloadLength());
+    //}
     return packet->GetPayloadLength();
 }
 
@@ -233,4 +240,16 @@ void CRtpReceiver::write_media_data_to_file(char* file_name, void* pLog, int nLe
             m_pLogFile = NULL;
         }
     }
+}
+
+void CRtpReceiver::setup_callback_function(
+    callback_get_ps_stream_fp get_ps_stream,
+    callback_get_h264_stream_fp get_h264_stream,
+    callback_get_mpeg4_stream_fp get_mpeg4_stream,
+    callback_get_svac_stream_fp get_svac_stream)
+{
+    callback_get_ps_stream = get_ps_stream;
+    callback_get_h264_stream = get_h264_stream;
+    callback_get_mpeg4_stream = get_mpeg4_stream;
+    callback_get_svac_stream = get_svac_stream;
 }
