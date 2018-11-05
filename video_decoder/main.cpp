@@ -28,19 +28,32 @@ void write_media_data_to_file(char* file_name, void* pLog, int nLen)
     }
 }
 
-int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
-{   
+int callback_read_data_to_file(void *opaque, uint8_t *buf, int buf_size)
+{
     int data_length = 0;
 
     unsigned char buffer[100 * 1024] = { 0 };
-    
 
-    data_length = CStreamManager::get_instance()->read_data(NULL, buffer, 100*1024);
+    data_length = CStreamManager::get_instance()->read_data(NULL, buffer, 100 * 1024);
     if (0 < data_length)
     {
         LOG("hava receive data, data_length=%d\n", data_length);
         write_media_data_to_file("E://callback_tmp1.ps", buffer, data_length);
     }
+    return data_length;
+}
+
+int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
+{   
+    int data_length = 0;
+
+    
+    while (buf_size != data_length)
+    {
+        data_length = CStreamManager::get_instance()->read_data(NULL, buf, buf_size);
+        Sleep(1);
+    }
+
     return data_length;
 }
 
@@ -53,8 +66,8 @@ int callback_get_ps_stream(void *opaque, uint8_t *buf, int data_length)
     if (0 < write_data_length)
     {
         LOG("write data, data_length=%d\n", write_data_length);
-        read_data_length = CStreamManager::get_instance()->read_data(NULL, buffer, write_data_length);
-        write_media_data_to_file("E://callback_tmp1.ps", buffer, write_data_length);
+        //read_data_length = CStreamManager::get_instance()->read_data(NULL, buffer, write_data_length);
+        //write_media_data_to_file("E://callback_tmp1.ps", buffer, write_data_length);
     }
     return write_data_length;
 }
@@ -104,16 +117,15 @@ int main(int argc, char* argv[])
     *   test CDemuxer, demux stream from RTP.
     */
 
-    unsigned char* buffer = (unsigned char*)malloc(__MAX_BUFFER_SIZE);
-
-    CDemuxer::setup_callback_function(callback_read_data);
-    CDemuxer demuxer;
-
     CRtpReceiver::setup_callback_function(callback_get_ps_stream, NULL, NULL, NULL);
     CRtpReceiver rtp_recviver;
     rtp_recviver.set_cleint_ip("192.168.2.102");
-
     rtp_recviver.start_proc();
+
+    CDemuxer::setup_callback_function(callback_read_data);
+    CDemuxer demuxer;
+    demuxer.set_output_es_video_file("E://demuxer_netstream.h264");
+    demuxer.demux_ps_to_es_network();
 
     while (1)
     {

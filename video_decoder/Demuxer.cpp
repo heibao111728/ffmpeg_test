@@ -176,12 +176,11 @@ void CDemuxer::setup_callback_function(callback_get_network_stream_fp func)
 
 
 
-#define BUF_SIZE (8*1024*1024)
+#define BUF_SIZE (1*1024*1024)
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
 
 bool CDemuxer::demux_ps_to_es_network()
 {
-
     uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
     AVIOContext *av_io_context = NULL;
