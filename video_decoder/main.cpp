@@ -31,23 +31,32 @@ void write_media_data_to_file(char* file_name, void* pLog, int nLen)
 int callback_read_data(void *opaque, uint8_t *buf, int buf_size)
 {   
     int data_length = 0;
-    data_length = CStreamManager::get_instance()->read_data(NULL, buf, buf_size);
+
+    unsigned char buffer[100 * 1024] = { 0 };
+    
+
+    data_length = CStreamManager::get_instance()->read_data(NULL, buffer, 100*1024);
     if (0 < data_length)
     {
         LOG("hava receive data, data_length=%d\n", data_length);
+        write_media_data_to_file("E://callback_tmp1.ps", buffer, data_length);
     }
     return data_length;
 }
 
 int callback_get_ps_stream(void *opaque, uint8_t *buf, int data_length)
 {
-    int this_data_length = 0;
-    this_data_length = CStreamManager::get_instance()->write_data(buf, data_length);
-    if (0 < this_data_length)
+    int write_data_length = 0;
+    int read_data_length = 0;
+    unsigned char buffer[100 * 1024] = { 0 };
+    write_data_length = CStreamManager::get_instance()->write_data(buf, data_length);
+    if (0 < write_data_length)
     {
-        LOG("write data, data_length=%d\n", this_data_length);
+        LOG("write data, data_length=%d\n", write_data_length);
+        read_data_length = CStreamManager::get_instance()->read_data(NULL, buffer, write_data_length);
+        write_media_data_to_file("E://callback_tmp1.ps", buffer, write_data_length);
     }
-    return this_data_length;
+    return write_data_length;
 }
 
 
@@ -102,11 +111,13 @@ int main(int argc, char* argv[])
 
     CRtpReceiver::setup_callback_function(callback_get_ps_stream, NULL, NULL, NULL);
     CRtpReceiver rtp_recviver;
+    rtp_recviver.set_cleint_ip("192.168.2.102");
 
-    rtp_recviver.StartProc();
+    rtp_recviver.start_proc();
 
     while (1)
     {
+        //callback_read_data(NULL, NULL, 0);
         Sleep(10);
     }
 

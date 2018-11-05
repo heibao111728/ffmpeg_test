@@ -54,10 +54,9 @@ public:
     CRtpReceiver(unsigned short rtpPort = 9000);
     ~CRtpReceiver();
 
-    char* getFrame();
-    char* getSdpInfo();
-    int generateSdpInfo();
-    uint16_t getMediaPort();
+    char* get_sdp_info();
+    int generate_sdp_info();
+    uint16_t get_media_port();
 
     /**
     *   功能：
@@ -65,7 +64,7 @@ public:
     *   function：
     *       choice, depend on RTP payload, right payload process function. 
     */
-    int handlePacket(RTPPacket* packet);
+    int handle_packet(RTPPacket* packet);
 
     /**
     *   功能：
@@ -73,15 +72,19 @@ public:
     *   function：
     *       assemle packet data to an full Frame
     */
-    int handlePsPacket(RTPPacket* packet);
-    int handleMPEG4Packet(RTPPacket* packet);
-    int handleH264Packet(RTPPacket* packet);
+    int handle_ps_packet(RTPPacket* packet);
+    int handle_mpeg4_packet(RTPPacket* packet);
+    int handle_h264_packet(RTPPacket* packet);
 
-    static void ThreadProc(void* pParam);   //线程函数
-    int StartProc();
-    void StopProc();
-    HANDLE m_threadHandle;  //线程句柄
-    bool m_bThreadRuning;   //线程运行状态
+    static void thread_proc(void* pParam);   //线程函数
+    int start_proc();
+    void stop_proc();
+    HANDLE m_thread_handle;  //线程句柄
+    bool m_b_thread_runing;   //线程运行状态
+    
+    bool set_cleint_ip(char* ip);
+    bool set_media_port(unsigned short port);
+    bool set_client_id(char* id);
 
     void write_media_data_to_file(char* file_name, void* pLog, int nLen);
 
@@ -92,28 +95,19 @@ public:
         callback_get_svac_stream_fp get_svac_stream);
 
 private:
-    //RTPUDPv4TransmissionParams m_Transparams;
-    //RTPSessionParams m_Sessparams;
-    RTPSession m_RtpSession;
-    char m_SdpInfo[SDP_SIZE] = { 0 };
-    uint16_t m_mediaPort;
-    uint8_t m_pFrame[MAX_FRAME_SIZE];       //存放PS媒体帧缓存
-    uint8_t m_pEsFrame[MAX_FRAME_SIZE];       //存放ES媒体帧缓存
-    uint8_t* m_pTmpFrame;                   //组装完整的帧堆地址，用于插入仓库。
-    int m_offset;                           //位移
-    int m_frameSize;                        //完整帧大小
-    bool m_isMarkerPacket;                  //完整帧rtp包头标记
+    RTPSession m_rtp_session;
+    char m_sdp_info[SDP_SIZE] = { 0 };
 
-    FILE* m_pLogFile;
-    char m_ClientId[20 + 1];
-    char m_ClientIp[20 + 1];
+    bool m_is_marker_packet;                  //完整帧rtp包头标记
 
-    //CDemuxer2 m_ps_demuxer;
+    char m_client_id[20 + 1];
+    char m_client_ip[20 + 1];
+    uint16_t m_media_port;
 
-    static callback_get_ps_stream_fp callback_get_ps_stream;
-    static callback_get_h264_stream_fp callback_get_h264_stream;
-    static callback_get_mpeg4_stream_fp callback_get_mpeg4_stream;
-    static callback_get_svac_stream_fp callback_get_svac_stream;
+    static callback_get_ps_stream_fp m_callback_get_ps_stream;
+    static callback_get_h264_stream_fp m_callback_get_h264_stream;
+    static callback_get_mpeg4_stream_fp m_callback_get_mpeg4_stream;
+    static callback_get_svac_stream_fp m_callback_get_svac_stream;
 };
 
 #endif

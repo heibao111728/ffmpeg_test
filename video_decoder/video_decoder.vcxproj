@@ -75,6 +75,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg_4_0_win32\include;$(SolutionDir)jrtplib\include;$(SolutionDir);$(SolutionDir)jthread;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg_4_0_win32\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
