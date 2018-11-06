@@ -1,9 +1,10 @@
 #include "Demuxer2.h"
 #include <fstream>
-#include "StreamManager\StreamManager.h"
 
 namespace bsm {
 namespace bsm_video_decoder {
+
+callback_get_network_stream_demuxer2 demuxer2::callback_get_network_stream = NULL;
 
 int demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length)
 {
@@ -329,7 +330,7 @@ int demuxer2::demux_ps_to_es()
 int demuxer2::demux_ps_to_es_network()
 {
     int buffer_capacity = MAX_BUFFER_SIZE;      //buffer 总容量
-    int buffer_size = 0;                        //buffer 中当前数据大小
+    //int buffer_size = 0;                        //buffer 中当前数据大小
     int processed_size = 0;                     //已经解析完的缓存数据大小
     int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
     int read_size = 0;
@@ -372,7 +373,7 @@ int demuxer2::demux_ps_to_es_network()
         else
         {
             //查找失败
-            if (0 == processed_size && (buffer_size == buffer_capacity))
+            if (0 == processed_size && 0 == buffer_left_size)
             {
                 //缓冲区太小
                 LOG("buffer is too small.\n");
@@ -380,15 +381,7 @@ int demuxer2::demux_ps_to_es_network()
             }
             else
             {
-                //缓冲区足够，缓冲区中剩余的数据不足一整个PS packet， 需要重新读取文件
-                if (is_end_of_file)
-                {
-                    //处理最后缓存中的数据, 如果不做处理则丢失最后一个PS包数据
-                    deal_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
-                    break;
-                }
-
-                //查找失败，但文件未读完，则继续读文件
+                //查找失败
                 //第一步：将缓存中剩余数据移动到缓存最前端；
                 memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
                 memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
@@ -400,16 +393,15 @@ int demuxer2::demux_ps_to_es_network()
                 buffer_left_size += processed_size;
                 processed_size = 0;
 
-                //第二步：读取公共缓冲区数据将demux2缓存区填满。
-                //read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file);
-                read_size = CStreamManager::get_instance()->read_data(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
-                buffer_size = read_size;
+                //第二步：调用回调函数将demux2缓存区填满。
+                read_size = callback_get_network_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
+
+                //buffer_size = read_size + buffer_left_size;
 
                 buffer_left_size -= read_size;
                 if (buffer_left_size > 0)
                 {
                     LOG("outer buffer do'nt have enought data, need wait a moment.\n");
-                    is_end_of_file = true;
                     continue;
                 }
             }
@@ -455,6 +447,12 @@ void demuxer2::set_output_es_audio_file(char* filename)
     {
         sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH, "%s", filename);
     }
+}
+
+
+void demuxer2::setup_callback_function(callback_get_network_stream_demuxer2 func)
+{
+    callback_get_network_stream = func;
 }
 
 }//namespace bsm_video_decoder

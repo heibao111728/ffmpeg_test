@@ -123,6 +123,8 @@ typedef struct ps_packet_header
     unsigned char pack_stuffing_length : 3;                 // 112 bit, 14 Byte
 }ps_packet_header_t;
 
+typedef int(*callback_get_network_stream_demuxer2)(void *opaque, unsigned char *buf, int buf_size);
+
 /**
 *   description:
 *       demux ps stream to es stream, without ffmpeg.
@@ -133,7 +135,6 @@ typedef struct ps_packet_header
 *   Strengths:
 *       
 */
-
 class demuxer2
 {
 public:
@@ -172,6 +173,9 @@ public:
 
     int demux_ps_to_es();
     int demux_ps_to_es_network();
+
+    static void setup_callback_function(callback_get_network_stream_demuxer2 func);
+    static callback_get_network_stream_demuxer2 callback_get_network_stream;
 
 private:
     char m_input_ps_file_name[MAX_FILE_NAME_LENGTH];

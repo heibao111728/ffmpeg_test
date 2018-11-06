@@ -1,16 +1,16 @@
 #include "StreamManager.h"
 
-CStreamManager* CStreamManager::m_instance = NULL;
+stream_manager* stream_manager::m_instance = NULL;
+int stream_manager::m_capacity = 0;
 
-CStreamManager::CStreamManager()
+stream_manager::stream_manager()
 {
-    m_capacity = MAX_BUFFER_SIZE;
     m_stream_data_buffer = (unsigned char*)malloc(m_capacity);
 
     m_data_length = 0;
 }
 
-CStreamManager::~CStreamManager()
+stream_manager::~stream_manager()
 {
     if (NULL != m_stream_data_buffer)
     {
@@ -18,7 +18,7 @@ CStreamManager::~CStreamManager()
     }
 }
 
-int CStreamManager::read_data(void* op, unsigned char* buffer, int length)
+int stream_manager::pull_data(void* op, unsigned char* buffer, int length)
 {
     if (NULL == buffer || NULL == m_stream_data_buffer)
     {
@@ -45,7 +45,7 @@ int CStreamManager::read_data(void* op, unsigned char* buffer, int length)
 }
 
 
-int CStreamManager::write_data(unsigned char* data, int length)
+int stream_manager::push_data(unsigned char* data, int length)
 {
     if (NULL == data || NULL == m_stream_data_buffer)
     {
@@ -66,4 +66,9 @@ int CStreamManager::write_data(unsigned char* data, int length)
         m_data_length ++;
         m_stream_end_point %= m_capacity;
     }
+}
+
+int stream_manager::get_data_length()
+{
+    return m_data_length;
 }

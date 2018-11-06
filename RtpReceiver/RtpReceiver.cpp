@@ -171,7 +171,7 @@ int CRtpReceiver::handle_ps_packet(RTPPacket* packet)
 {
     if (packet && m_callback_get_ps_stream)
     {
-        //write_media_data_to_file("E://rtpreciver_tmp1.ps", packet->GetPayloadData(), packet->GetPayloadLength());
+        write_media_data_to_file("E://rtpreciver_tmp1.ps", packet->GetPayloadData(), packet->GetPayloadLength());
         m_callback_get_ps_stream(NULL, packet->GetPayloadData(), packet->GetPayloadLength());
         return packet->GetPayloadLength();
     }
