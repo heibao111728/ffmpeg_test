@@ -1,10 +1,11 @@
 #ifndef __DEMUXER2_H__
 #define __DEMUXER2_H__
 
-#include <fstream>
+namespace bsm{
+namespace bsm_video_decoder{
 
 #define MAX_BUFFER_SIZE (1024 * 1024)
-#define MAX_FILENAME_LENGTH (60)
+#define MAX_FILE_NAME_LENGTH (60)
 
 //logger
 #define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
@@ -133,11 +134,11 @@ typedef struct ps_packet_header
 *       
 */
 
-class CDemuxer2
+class demuxer2
 {
 public:
-    CDemuxer2() {}
-    ~CDemuxer2() {}
+    demuxer2() {}
+    ~demuxer2() {}
 
     /**
     *   ¹¦ÄÜ£º
@@ -165,21 +166,20 @@ public:
 
     void write_media_data_to_file(char* file_name, void* pLog, int nLen);
 
-    void setup_src_ps_file(char* filename);
-    void setup_dst_es_video_file(char* filename);
-    void setup_dst_es_audio_file(char* filename);
+    void set_input_ps_file(char* filename);
+    void set_output_es_video_file(char* filename);
+    void set_output_es_audio_file(char* filename);
 
-    int do_demux();
-
-    bool open_src_ps_file();
-    bool close_src_ps_file();
+    int demux_ps_to_es();
+    int demux_ps_to_es_network();
 
 private:
-    char m_src_ps_filename[MAX_FILENAME_LENGTH];
-    char m_dst_es_video_filename[MAX_FILENAME_LENGTH];
-    char m_dst_es_audio_filename[MAX_FILENAME_LENGTH];
-
-    FILE* m_pf_ps_file;
+    char m_input_ps_file_name[MAX_FILE_NAME_LENGTH];
+    char m_output_es_video_file_name[MAX_FILE_NAME_LENGTH];
+    char m_output_es_audio_file_name[MAX_FILE_NAME_LENGTH];
 };
+
+}//namespace bsm_video_decoder
+}//namespace bsm
 
 #endif // !__DEMUXER2_H__
