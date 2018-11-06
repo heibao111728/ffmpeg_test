@@ -1,8 +1,44 @@
+#define __STDC_CONSTANT_MACROS
+
+#ifdef _WIN32
+//Windows
+extern "C"
+{
+#include "libswscale/swscale.h"
+#include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
+#include <libavformat/avio.h>
+#include <libavutil/file.h>
+#include <libavutil/mathematics.h>
+};
+#else
+//Linux...
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include <libswscale/swscale.h>
+#include <libavutil/opt.h>
+#include <libavutil/imgutils.h>
+#ifdef __cplusplus
+};
+#endif
+#endif
+
 #include "Demuxer.h"
+#include "stdio.h"
 
-callback_get_network_stream_fp CDemuxer::callback_get_network_stream = NULL;
+namespace bsm {
+namespace bsm_video_decoder {
 
-void CDemuxer::set_input_ps_file(char* file_name)
+#define BUF_SIZE (1*1024*1024)
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
+
+callback_get_network_stream_fp demuxer::callback_get_network_stream = NULL;
+
+void demuxer::set_input_ps_file(char* file_name)
 {
     memset(m_input_ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
@@ -10,7 +46,7 @@ void CDemuxer::set_input_ps_file(char* file_name)
         sprintf_s(m_input_ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
     }
 }
-void CDemuxer::set_output_es_video_file(char* file_name)
+void demuxer::set_output_es_video_file(char* file_name)
 {
     memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
@@ -19,7 +55,7 @@ void CDemuxer::set_output_es_video_file(char* file_name)
     }
 }
 
-void CDemuxer::set_output_es_audio_file(char* file_name)
+void demuxer::set_output_es_audio_file(char* file_name)
 {
     memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
@@ -28,7 +64,7 @@ void CDemuxer::set_output_es_audio_file(char* file_name)
     }
 }
 
-bool CDemuxer::demux_ps_to_es()
+bool demuxer::demux_ps_to_es()
 {
     AVInputFormat * av_input_formate = NULL;
     AVOutputFormat *av_output_formate = NULL;
@@ -169,17 +205,13 @@ bool CDemuxer::demux_ps_to_es()
 
 
 
-void CDemuxer::setup_callback_function(callback_get_network_stream_fp func)
+void demuxer::setup_callback_function(callback_get_network_stream_fp func)
 {
     callback_get_network_stream = func;
 }
 
 
-
-#define BUF_SIZE (1*1024*1024)
-#define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
-
-bool CDemuxer::demux_ps_to_es_network()
+bool demuxer::demux_ps_to_es_network()
 {
     uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
@@ -325,3 +357,6 @@ bool CDemuxer::demux_ps_to_es_network()
 
     return 0;
 }
+
+} // namespace bsm_video_decoder
+} // namespace bsm

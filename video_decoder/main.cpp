@@ -9,6 +9,9 @@ DTS（Decoding Time Stamp）：即解码时间戳，这个时间戳的意义在于告诉播放器该在什么
 PTS（Presentation Time Stamp）：即显示时间戳，这个时间戳用来告诉播放器该在什么时候显示这一帧的数据。
 */
 
+using namespace bsm;
+using namespace bsm_video_decoder;
+
 void write_media_data_to_file(char* file_name, void* pLog, int nLen)
 {
     FILE* m_pLogFile = NULL ;
@@ -80,10 +83,10 @@ int main(int argc, char* argv[])
     WSAStartup(MAKEWORD(2, 2), &dat);
 #if 0
     /**
-    *   test CDemuxer, demux stream from file
+    *   test demuxer, demux stream from file
     */
-    CDemuxer::setup_callback_function(callback_read_data);
-    CDemuxer demuxer;
+    demuxer::setup_callback_function(callback_read_data);
+    demuxer demuxer;
 
     demuxer.set_input_ps_file("E://success_data//tmp1.ps");
     demuxer.set_output_es_video_file("E://success_data//tmp1.h264");
@@ -91,30 +94,23 @@ int main(int argc, char* argv[])
     demuxer.demux_ps_to_es();
 #endif
 
-#if 0
+#if 1
     /**
-    *   test CDemuxer2, demux stream from file
+    *   test demuxer2, demux stream from file
     */
-    CDemuxer2 ps_demuxer;
+    demuxer2 ps_demuxer;
 
-    int length_of_ps_header;
-    length_of_ps_header = sizeof(ps_packet_header_t);
+    ps_demuxer.set_input_ps_file("E://success_data//tmp1.ps");
+    ps_demuxer.set_output_es_video_file("E://success_data//tmp1.h264");
 
-    ps_demuxer.setup_src_ps_file("E://success_data//tmp1.ps");
-    ps_demuxer.setup_dst_es_video_file("E://success_data//tmp1.h264");
+    ps_demuxer.demux_ps_to_es();
 
-    if (ps_demuxer.open_src_ps_file())
-    {
-        ps_demuxer.do_demux();
-    }
-
-    ps_demuxer.close_src_ps_file();
     return 0;
 #endif
 
-#if 1
+#if 0
     /**
-    *   test CDemuxer, demux stream from RTP.
+    *   test demuxer, demux stream from RTP.
     */
 
     CRtpReceiver::setup_callback_function(callback_get_ps_stream, NULL, NULL, NULL);
