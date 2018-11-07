@@ -4,11 +4,11 @@
 namespace bsm {
 namespace bsm_video_decoder {
 
-callback_pull_ps_stream_demuxer2 demuxer2::m_callback_pull_ps_stream = NULL;
-callback_push_es_video_stream_demuxer2 demuxer2::m_callback_push_es_video_stream = NULL;
-callback_push_es_audio_stream_demuxer2 demuxer2::m_callback_push_es_audio_stream = NULL;
+callback_pull_ps_stream_demuxer2 bsm_demuxer2::m_callback_pull_ps_stream = NULL;
+callback_push_es_video_stream_demuxer2 bsm_demuxer2::m_callback_push_es_video_stream = NULL;
+callback_push_es_audio_stream_demuxer2 bsm_demuxer2::m_callback_push_es_audio_stream = NULL;
 
-int demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length)
+int bsm_demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length)
 {
     if (source && seed)
     {
@@ -44,7 +44,7 @@ int demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigne
 }
 
 
-int demuxer2::deal_ps_packet(unsigned char * packet, int length)
+int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
 {
     int ps_packet_header_stuffed_size;
     int pes_system_header_header_length;
@@ -186,7 +186,7 @@ int demuxer2::deal_ps_packet(unsigned char * packet, int length)
     return packet_processed_length;
 }
 
-void demuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLen)
+void bsm_demuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLen)
 {
     FILE* pf_media_file = NULL;
     if (pLog != NULL && nLen > 0)
@@ -207,7 +207,7 @@ void demuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLen)
     }
 }
 
-int demuxer2::demux_ps_to_es()
+int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
 {
     int buffer_capacity = MAX_BUFFER_SIZE;      //buffer total size
     int buffer_size = 0;                        //buffer current size
@@ -238,14 +238,14 @@ int demuxer2::demux_ps_to_es()
     errno_t err;
     FILE* pf_ps_file;
 
-    err = ::fopen_s(&pf_ps_file, m_input_ps_file_name, "rb");
+    err = ::fopen_s(&pf_ps_file, ps_file_name, "rb");
     if (err == 0)
     {
-        printf("The file '%s' was opened\n", m_input_ps_file_name);
+        printf("The file '%s' was opened\n", ps_file_name);
     }
     else
     {
-        printf("The file '%s' was not opened\n", m_input_ps_file_name);
+        printf("The file '%s' was not opened\n", ps_file_name);
         return -1;
     }
 
@@ -327,18 +327,18 @@ int demuxer2::demux_ps_to_es()
         err = fclose(pf_ps_file);
         if (err == 0)
         {
-            printf("The file '%s' was closed\n", m_input_ps_file_name);
+            printf("The file '%s' was closed\n", ps_file_name);
         }
         else
         {
-            printf("The file '%s' was not closed\n", m_input_ps_file_name);
+            printf("The file '%s' was not closed\n", ps_file_name);
         }
     }
 
     return 0;
 }
 
-int demuxer2::demux_ps_to_es_network()
+int bsm_demuxer2::demux_ps_to_es_network()
 {
     int buffer_capacity = MAX_BUFFER_SIZE;      //buffer 总容量
     //int buffer_size = 0;                        //buffer 中当前数据大小
@@ -436,17 +436,7 @@ int demuxer2::demux_ps_to_es_network()
     return 0;
 }
 
-void demuxer2::set_input_ps_file(char* filename)
-{
-    memset(m_input_ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
-    if (strlen(filename) > 0)
-    {
-        sprintf_s(m_input_ps_file_name, MAX_FILE_NAME_LENGTH, "%s", filename);
-    }
-}
-
-
-void demuxer2::setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
+void bsm_demuxer2::setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
     callback_push_es_video_stream_demuxer2 push_es_video_stream,
     callback_push_es_audio_stream_demuxer2 push_es_audio_stream)
 {

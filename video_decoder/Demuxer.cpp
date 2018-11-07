@@ -40,10 +40,10 @@ callback_get_network_stream_fp demuxer::callback_get_network_stream = NULL;
 
 void demuxer::set_input_ps_file(char* file_name)
 {
-    memset(m_input_ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(m_input_ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
     }
 }
 void demuxer::set_output_es_video_file(char* file_name)
@@ -88,7 +88,7 @@ bool demuxer::demux_ps_to_es()
     av_formate_context_input = avformat_alloc_context();
 
     //打开一个输入流，并读取头信息。
-    i_ret = avformat_open_input(&av_formate_context_input, m_input_ps_file_name, 0, NULL);
+    i_ret = avformat_open_input(&av_formate_context_input, ps_file_name, 0, NULL);
     if (i_ret < 0)
     {
         LOG("Open input file failed.");

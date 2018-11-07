@@ -48,7 +48,7 @@ int callback_read_data_to_file(void *opaque, uint8_t *buf, int buf_size)
 }
 
 /**
-*    callback function, used for demuxer2
+*    callback function, used for bsm_demuxer2
 */
 
 int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
@@ -127,9 +127,9 @@ int main(int argc, char* argv[])
 
 
     /**
-    *   test demuxer2, demux stream from RTP.
+    *   test bsm_demuxer2, demux stream from RTP.
     */
-#if 1
+#if 0
 
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);
@@ -157,16 +157,14 @@ int main(int argc, char* argv[])
 #endif 
 
     /**
-    *   test demuxer2, demux stream from file.
+    *   test bsm_demuxer2, demux stream from file.
     */
-#if 0
+#if 1
 
-    demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
-    demuxer2 demuxer2;
+    bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
+    bsm_demuxer2 demuxer2;
 
-    demuxer.set_output_es_video_file("E://demuxer2_netstream.h264");
-    demuxer.set_input_ps_file("E://tmp1.ps");
-    demuxer.demux_ps_to_es();
+    demuxer2.demux_ps_to_es_file("E://tmp1.ps");
 
     while (1)
     {
