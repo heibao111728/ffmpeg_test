@@ -137,11 +137,11 @@ typedef int(*callback_push_es_audio_stream_demuxer2)(void *opaque, unsigned char
 *   Strengths:
 *       
 */
-class demuxer2
+class bsm_demuxer2
 {
 public:
-    demuxer2() {}
-    ~demuxer2() {}
+    bsm_demuxer2() {}
+    ~bsm_demuxer2() {}
 
     /**
     *   ¹¦ÄÜ£º
@@ -167,14 +167,10 @@ public:
     */
     int deal_ps_packet(unsigned char * packet, int length);
 
-    void write_media_data_to_file(char* file_name, void* pLog, int nLen);
-
-    void set_input_ps_file(char* filename);
-    void set_output_es_video_file(char* filename);
-    void set_output_es_audio_file(char* filename);
-
-    int demux_ps_to_es();
+    int demux_ps_to_es_file(char* ps_file_name);
     int demux_ps_to_es_network();
+
+    void write_media_data_to_file(char* file_name, void* pLog, int nLen);
 
     static void setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
         callback_push_es_video_stream_demuxer2 push_es_video_stream,
@@ -185,7 +181,7 @@ public:
     static callback_push_es_audio_stream_demuxer2 m_callback_push_es_audio_stream;
 
 private:
-    char m_input_ps_file_name[MAX_FILE_NAME_LENGTH];
+    
 };
 
 }//namespace bsm_video_decoder
