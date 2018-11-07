@@ -75,8 +75,6 @@ int CRtpReceiver::start_proc()
 void CRtpReceiver::stop_proc()
 {
     m_b_thread_runing = false;
-
-    m_rtp_session.BYEDestroy(RTPTime(10, 0), 0, 0);
 }
 
 void CRtpReceiver::thread_proc(void* pParam)
@@ -85,6 +83,7 @@ void CRtpReceiver::thread_proc(void* pParam)
 
     RTPUDPv4TransmissionParams Transparams;
     RTPSessionParams Sessparams;
+    RTPSession rtp_session;
 
     Sessparams.SetOwnTimestampUnit(1.0 / 8000.0);
     Sessparams.SetAcceptOwnPackets(true);
@@ -93,7 +92,7 @@ void CRtpReceiver::thread_proc(void* pParam)
 
     int status, i, num;
 
-    status = (pThis->m_rtp_session).Create(Sessparams, &Transparams);
+    status = rtp_session.Create(Sessparams, &Transparams);
     if (0 != status)
     {
         printf("create rtp session failure. check if you init windows network content.\n");
@@ -102,28 +101,30 @@ void CRtpReceiver::thread_proc(void* pParam)
 
     while (pThis->m_b_thread_runing)
     {
-        (pThis->m_rtp_session).BeginDataAccess();
+        rtp_session.BeginDataAccess();
 
         // check incoming packets
-        if ((pThis->m_rtp_session).GotoFirstSourceWithData())
+        if (rtp_session.GotoFirstSourceWithData())
         {
             do
             {
                 RTPPacket *pack;
 
-                while ((pack = (pThis->m_rtp_session).GetNextPacket()) != NULL)
+                while ((pack = rtp_session.GetNextPacket()) != NULL)
                 {
                     //pThis->assemleFrame(pack);
                     pThis->handle_packet(pack);
                     // we don't longer need the packet, so
                     // we'll delete it
-                    (pThis->m_rtp_session).DeletePacket(pack);
+                    rtp_session.DeletePacket(pack);
                 }
-            } while ((pThis->m_rtp_session).GotoNextSourceWithData());
+            } while (rtp_session.GotoNextSourceWithData());
         }
-        (pThis->m_rtp_session).EndDataAccess();
+        rtp_session.EndDataAccess();
         RTPTime::Wait(RTPTime(1, 0));
     }
+
+    rtp_session.BYEDestroy(RTPTime(10, 0), 0, 0);
 }
 
 int CRtpReceiver::handle_packet(RTPPacket* packet)
