@@ -33,7 +33,7 @@ int stream_manager::pull_data(void* op, unsigned char* buffer, int length)
     }
 
     m_lock.lock();
-    LOG("stream_manager pull_data func lock.*********************************\n");
+    //LOG("stream_manager pull_data func lock.*********************************\n");
 
     int i = 0;
     for (; i < length && 0 < m_data_length; i++)
@@ -45,7 +45,7 @@ int stream_manager::pull_data(void* op, unsigned char* buffer, int length)
     }
 
     m_lock.unlock();
-    LOG("stream_manager pull_data func unlock.*********************************\n");
+    //LOG("stream_manager pull_data func unlock.*********************************\n");
 
     return i;
 }
@@ -65,7 +65,7 @@ int stream_manager::push_data(unsigned char* data, int length)
     }
 
     m_lock.lock();
-    LOG("stream_manager push_data func lock.#####################################\n");
+    //LOG("stream_manager push_data func lock.#####################################\n");
 
     int i = 0;
     for (; i < length && m_data_length < m_capacity; i++)
@@ -77,7 +77,7 @@ int stream_manager::push_data(unsigned char* data, int length)
     }
 
     m_lock.unlock();
-    LOG("stream_manager push_data func unlock.#####################################\n");
+    //LOG("stream_manager push_data func unlock.#####################################\n");
 
     return i;
 }

@@ -47,20 +47,50 @@ int callback_read_data_to_file(void *opaque, uint8_t *buf, int buf_size)
     return data_length;
 }
 
+/**
+*    callback function, used for demuxer2
+*/
+
 int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
 {
     int data_length = 0;
 
-    unsigned char buffer[100 * 1024] = { 0 };
-
-    data_length = stream_manager::get_instance()->pull_data(NULL, buffer, 100 * 1024);
+    data_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
     if (0 < data_length)
     {
         LOG("hava receive data, data_length=%d\n", data_length);
-        write_media_data_to_file("E://callback_tmp1.ps", buffer, data_length);
     }
     return data_length;
 }
+
+int callback_push_es_video_stream(void *opaque, uint8_t *data, int data_length)
+{
+    char* file_name = "E://demuxer2_callback_stream.h264";
+    FILE* p_file = NULL;
+    int write_data_size = 0;
+    if (data != NULL && data_length > 0)
+    {
+        if (NULL == p_file && strlen(file_name) > 0)
+        {
+            ::fopen_s(&p_file, file_name, "ab+");
+        }
+
+        if (p_file != NULL)
+        {
+            write_data_size = ::fwrite(data, data_length, 1, p_file);
+            ::fclose(p_file);
+            p_file = NULL;
+        }
+    }
+    return write_data_size;
+}
+
+
+
+
+/**
+*   callback function, used for rtpreceiver.
+*/
 
 int callback_push_ps_stream(void *opaque, uint8_t *buf, int data_length)
 {
@@ -121,9 +151,9 @@ int main(int argc, char* argv[])
     rtp_recviver.set_cleint_ip("192.168.2.102");
     rtp_recviver.start_proc();
 
-    demuxer2::setup_callback_function(callback_pull_ps_stream);
+    demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     demuxer2 demuxer;
-    demuxer.set_output_es_video_file("E://demuxer2_netstream.h264");
+    //demuxer.set_output_es_video_file("E://demuxer2_netstream.h264");
     demuxer.demux_ps_to_es_network();
 
     while (1)

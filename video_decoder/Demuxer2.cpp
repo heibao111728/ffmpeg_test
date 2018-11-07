@@ -4,7 +4,9 @@
 namespace bsm {
 namespace bsm_video_decoder {
 
-callback_get_network_stream_demuxer2 demuxer2::callback_get_network_stream = NULL;
+callback_pull_ps_stream_demuxer2 demuxer2::m_callback_pull_ps_stream = NULL;
+callback_push_es_video_stream_demuxer2 demuxer2::m_callback_push_es_video_stream = NULL;
+callback_push_es_audio_stream_demuxer2 demuxer2::m_callback_push_es_audio_stream = NULL;
 
 int demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length)
 {
@@ -140,9 +142,15 @@ int demuxer2::deal_ps_packet(unsigned char * packet, int length)
 
                 // +9 的原因是pes_video_h264_packet_stuffed_size之前还有9个字节的头部数据
                 // +6 的原因是pes包的总长度是在头部之后第6个字节处得到的。
-                write_media_data_to_file(m_output_es_video_file_name,
-                    next_pes_packet + 9 + pes_video_h264_packet_stuffed_size,
-                    pes_video_h264_packet_size + 6 - 9 - pes_video_h264_packet_stuffed_size);
+                //write_media_data_to_file(m_output_es_video_file_name,
+                    //next_pes_packet + 9 + pes_video_h264_packet_stuffed_size,
+                    //pes_video_h264_packet_size + 6 - 9 - pes_video_h264_packet_stuffed_size);
+                if (m_callback_push_es_video_stream)
+                {
+                    m_callback_push_es_video_stream(NULL, 
+                        next_pes_packet + 9 + pes_video_h264_packet_stuffed_size,
+                        pes_video_h264_packet_size + 6 - 9 - pes_video_h264_packet_stuffed_size);
+                }
 
                 packet_processed_length += 6 + pes_video_h264_packet_size;
                 next_pes_packet = packet + packet_processed_length;
@@ -394,7 +402,7 @@ int demuxer2::demux_ps_to_es_network()
                 processed_size = 0;
 
                 //第二步：调用回调函数将demux2缓存区填满。
-                read_size = callback_get_network_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
+                read_size = m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
 
                 //buffer_size = read_size + buffer_left_size;
 
@@ -431,28 +439,14 @@ void demuxer2::set_input_ps_file(char* filename)
     }
 }
 
-void demuxer2::set_output_es_video_file(char* filename)
-{
-    memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH);
-    if (strlen(filename) > 0)
-    {
-        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH, "%s", filename);
-    }
-}
 
-void demuxer2::set_output_es_audio_file(char* filename)
+void demuxer2::setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
+    callback_push_es_video_stream_demuxer2 push_es_video_stream,
+    callback_push_es_audio_stream_demuxer2 push_es_audio_stream)
 {
-    memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH);
-    if (strlen(filename) > 0)
-    {
-        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH, "%s", filename);
-    }
-}
-
-
-void demuxer2::setup_callback_function(callback_get_network_stream_demuxer2 func)
-{
-    callback_get_network_stream = func;
+    m_callback_pull_ps_stream = pull_ps_stream;
+    m_callback_push_es_video_stream = push_es_video_stream;
+    m_callback_push_es_audio_stream = push_es_audio_stream;
 }
 
 }//namespace bsm_video_decoder

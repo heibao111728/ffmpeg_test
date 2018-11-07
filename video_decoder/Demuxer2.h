@@ -123,7 +123,9 @@ typedef struct ps_packet_header
     unsigned char pack_stuffing_length : 3;                 // 112 bit, 14 Byte
 }ps_packet_header_t;
 
-typedef int(*callback_get_network_stream_demuxer2)(void *opaque, unsigned char *buf, int buf_size);
+typedef int(*callback_pull_ps_stream_demuxer2)(void *opaque, unsigned char *buf, int buf_size);         //input ps stream
+typedef int(*callback_push_es_video_stream_demuxer2)(void *opaque, unsigned char *buf, int buf_size);   //output video es stream
+typedef int(*callback_push_es_audio_stream_demuxer2)(void *opaque, unsigned char *buf, int buf_size);   //output audio es stream
 
 /**
 *   description:
@@ -174,13 +176,16 @@ public:
     int demux_ps_to_es();
     int demux_ps_to_es_network();
 
-    static void setup_callback_function(callback_get_network_stream_demuxer2 func);
-    static callback_get_network_stream_demuxer2 callback_get_network_stream;
+    static void setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
+        callback_push_es_video_stream_demuxer2 push_es_video_stream,
+        callback_push_es_audio_stream_demuxer2 push_es_audio_stream);
+
+    static callback_pull_ps_stream_demuxer2 m_callback_pull_ps_stream;
+    static callback_push_es_video_stream_demuxer2 m_callback_push_es_video_stream;
+    static callback_push_es_audio_stream_demuxer2 m_callback_push_es_audio_stream;
 
 private:
     char m_input_ps_file_name[MAX_FILE_NAME_LENGTH];
-    char m_output_es_video_file_name[MAX_FILE_NAME_LENGTH];
-    char m_output_es_audio_file_name[MAX_FILE_NAME_LENGTH];
 };
 
 }//namespace bsm_video_decoder
