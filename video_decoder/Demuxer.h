@@ -31,6 +31,8 @@ public:
     bool demux_ps_to_es_file(char* ps_file_name);
     bool demux_ps_to_es_network();
 
+    bool demux_ps_file_to_es_stream(char* ps_file_name);
+
     static void setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
         callback_push_es_video_stream_demuxer push_es_video_stream,
         callback_push_es_audio_stream_demuxer push_es_audio_stream);
