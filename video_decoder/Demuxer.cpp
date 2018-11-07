@@ -36,37 +36,31 @@ namespace bsm_video_decoder {
 #define BUF_SIZE (1*1024*1024)
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
 
-callback_get_network_stream_fp demuxer::callback_get_network_stream = NULL;
+callback_pull_ps_stream_demuxer bsm_demuxer::m_callback_pull_ps_stream = NULL;
+callback_push_es_video_stream_demuxer bsm_demuxer::m_callback_push_es_video_stream = NULL;
+callback_push_es_audio_stream_demuxer bsm_demuxer::m_callback_push_es_audio_stream = NULL;
 
-void demuxer::set_input_ps_file(char* file_name)
+void bsm_demuxer::set_output_es_video_file(char* file_name)
 {
-    memset(ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH___BSM_DEMUXER);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
-    }
-}
-void demuxer::set_output_es_video_file(char* file_name)
-{
-    memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH);
-    if (strlen(file_name) > 0)
-    {
-        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH___BSM_DEMUXER, "%s", file_name);
     }
 }
 
-void demuxer::set_output_es_audio_file(char* file_name)
+void bsm_demuxer::set_output_es_audio_file(char* file_name)
 {
-    memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH___BSM_DEMUXER);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH___BSM_DEMUXER, "%s", file_name);
     }
 }
 
-bool demuxer::demux_ps_to_es()
+bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
 {
-    AVInputFormat * av_input_formate = NULL;
+    //AVInputFormat * av_input_formate = NULL;
     AVOutputFormat *av_output_formate = NULL;
 
     AVFormatContext *av_formate_context_input;
@@ -205,13 +199,17 @@ bool demuxer::demux_ps_to_es()
 
 
 
-void demuxer::setup_callback_function(callback_get_network_stream_fp func)
+void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
+    callback_push_es_video_stream_demuxer push_es_video_stream,
+    callback_push_es_audio_stream_demuxer push_es_audio_stream)
 {
-    callback_get_network_stream = func;
+    m_callback_pull_ps_stream = pull_ps_stream;
+    m_callback_push_es_video_stream = push_es_video_stream;
+    m_callback_push_es_audio_stream = push_es_audio_stream;
 }
 
 
-bool demuxer::demux_ps_to_es_network()
+bool bsm_demuxer::demux_ps_to_es_network()
 {
     uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
@@ -229,7 +227,7 @@ bool demuxer::demux_ps_to_es_network()
     int frame_index = 0;
 
     //step1:…Í«Î“ª∏ˆAVIOContext
-    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_get_network_stream, NULL, NULL);
+    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, m_callback_pull_ps_stream, NULL, NULL);
     if (!av_io_context)
     {
         fprintf(stderr, "avio alloc failed!\n");
