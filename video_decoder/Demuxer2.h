@@ -5,7 +5,7 @@ namespace bsm{
 namespace bsm_video_decoder{
 
 #define MAX_BUFFER_SIZE (1024 * 1024)
-#define MAX_FILE_NAME_LENGTH (60)
+//#define MAX_FILE_NAME_LENGTH___BSM_DEMUXER2 (60)
 
 //logger
 #define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)

@@ -36,37 +36,31 @@ namespace bsm_video_decoder {
 #define BUF_SIZE (1*1024*1024)
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
 
-callback_get_network_stream_fp demuxer::callback_get_network_stream = NULL;
+callback_pull_ps_stream_demuxer bsm_demuxer::m_callback_pull_ps_stream = NULL;
+callback_push_es_video_stream_demuxer bsm_demuxer::m_callback_push_es_video_stream = NULL;
+callback_push_es_audio_stream_demuxer bsm_demuxer::m_callback_push_es_audio_stream = NULL;
 
-void demuxer::set_input_ps_file(char* file_name)
+void bsm_demuxer::set_output_es_video_file(char* file_name)
 {
-    memset(ps_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH___BSM_DEMUXER);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(ps_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
-    }
-}
-void demuxer::set_output_es_video_file(char* file_name)
-{
-    memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH);
-    if (strlen(file_name) > 0)
-    {
-        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH___BSM_DEMUXER, "%s", file_name);
     }
 }
 
-void demuxer::set_output_es_audio_file(char* file_name)
+void bsm_demuxer::set_output_es_audio_file(char* file_name)
 {
-    memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH);
+    memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH___BSM_DEMUXER);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH, "%s", file_name);
+        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH___BSM_DEMUXER, "%s", file_name);
     }
 }
 
-bool demuxer::demux_ps_to_es()
+bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
 {
-    AVInputFormat * av_input_formate = NULL;
+    //AVInputFormat * av_input_formate = NULL;
     AVOutputFormat *av_output_formate = NULL;
 
     AVFormatContext *av_formate_context_input;
@@ -205,13 +199,17 @@ bool demuxer::demux_ps_to_es()
 
 
 
-void demuxer::setup_callback_function(callback_get_network_stream_fp func)
+void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
+    callback_push_es_video_stream_demuxer push_es_video_stream,
+    callback_push_es_audio_stream_demuxer push_es_audio_stream)
 {
-    callback_get_network_stream = func;
+    m_callback_pull_ps_stream = pull_ps_stream;
+    m_callback_push_es_video_stream = push_es_video_stream;
+    m_callback_push_es_audio_stream = push_es_audio_stream;
 }
 
 
-bool demuxer::demux_ps_to_es_network()
+bool bsm_demuxer::demux_ps_to_es_network()
 {
     uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
@@ -229,7 +227,7 @@ bool demuxer::demux_ps_to_es_network()
     int frame_index = 0;
 
     //step1:申请一个AVIOContext
-    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, callback_get_network_stream, NULL, NULL);
+    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, m_callback_pull_ps_stream, NULL, NULL);
     if (!av_io_context)
     {
         fprintf(stderr, "avio alloc failed!\n");
@@ -356,6 +354,122 @@ bool demuxer::demux_ps_to_es_network()
     avformat_free_context(av_formate_context_out_video);
 
     return 0;
+}
+
+
+bool bsm_demuxer::demux_ps_file_to_es_stream(char* ps_file_name)
+{
+    AVOutputFormat *av_output_formate = NULL;
+    AVFormatContext *av_formate_context_input;
+    AVFormatContext *av_formate_context_out_video = NULL;
+
+    AVStream *in_stream_ps = NULL;
+
+    AVPacket av_packet;
+
+    AVIOContext *av_io_context = NULL;
+
+    int i_ret;
+    int videoindex = -1;
+    int audioindex = -1;
+    int frame_index = 0;
+
+    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
+
+    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, NULL, m_callback_push_es_video_stream, NULL);
+    if (!av_io_context)
+    {
+        fprintf(stderr, "avio alloc failed!\n");
+        return -1;
+    }
+
+    av_formate_context_out_video = avformat_alloc_context();
+    av_formate_context_out_video->pb = av_io_context;
+
+    av_formate_context_input = avformat_alloc_context();
+
+    //打开一个输入流，并读取头信息。
+    i_ret = avformat_open_input(&av_formate_context_input, ps_file_name, 0, NULL);
+    if (i_ret < 0)
+    {
+        LOG("Open input file failed.");
+        return false;
+    }
+
+    //获取媒体流信息
+    i_ret = avformat_find_stream_info(av_formate_context_input, NULL);
+    if (i_ret < 0)
+    {
+        LOG("Retrieve iniput stream info failed.");
+        return false;
+    }
+
+    // Write file header
+    if (avformat_write_header(av_formate_context_out_video, NULL) < 0)
+    {
+        LOG("Error occurred when opening video output file.");
+        return false;
+    }
+
+    //获取视频流索引
+    for (int i = 0; i < av_formate_context_input->nb_streams; ++i)
+    {
+        in_stream_ps = av_formate_context_input->streams[i];
+
+        if (AVMEDIA_TYPE_VIDEO == in_stream_ps->codecpar->codec_type)
+        {
+            videoindex = i;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    frame_index = 0;
+
+    while (1)
+    {
+        // Get an AVPacket
+        if (av_read_frame(av_formate_context_input, &av_packet) < 0)
+        {
+            LOG("end of file!\n");
+            break;
+        }
+
+        if (videoindex == av_packet.stream_index)
+        {
+            LOG("Write Video Packet. size: %d\t pts: %d\n", av_packet.size, av_packet.pts);
+        }
+        else
+        {
+            continue;
+        }
+
+        // Write
+        if (av_interleaved_write_frame(av_formate_context_out_video, &av_packet) < 0)
+        {
+            LOG("Error when write_frame.");
+            break;
+        }
+
+        LOG("Write %8d frames to output file.", frame_index);
+
+        av_packet_unref(&av_packet);
+
+        ++frame_index;
+    }
+
+    // Write file trailer
+    if (av_write_trailer(av_formate_context_out_video) != 0)
+    {
+        LOG("Error occurred when writing file trailer.");
+        return false;
+    }
+
+    avio_context_free(&av_io_context);
+    avformat_free_context(av_formate_context_input);
+    avformat_free_context(av_formate_context_out_video);
 }
 
 } // namespace bsm_video_decoder

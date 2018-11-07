@@ -65,7 +65,7 @@ int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
 
 int callback_push_es_video_stream(void *opaque, uint8_t *data, int data_length)
 {
-    char* file_name = "E://demuxer2_callback_stream.h264";
+    char* file_name = "E://demuxer_callback_stream.h264";
     FILE* p_file = NULL;
     int write_data_size = 0;
     if (data != NULL && data_length > 0)
@@ -112,16 +112,14 @@ int callback_push_ps_stream(void *opaque, uint8_t *buf, int data_length)
 int main(int argc, char* argv[])
 {
     /**
-    *   test demuxer, demux stream from file
+    *   test bsm_demuxer, demux stream from file
     */
-#if 0
-    demuxer::setup_callback_function(callback_read_data);
-    demuxer demuxer;
+#if 1
+    bsm_demuxer::setup_callback_function(NULL, callback_push_es_video_stream, NULL);
+    bsm_demuxer demuxer;
+    demuxer.set_output_es_video_file("E://tmp1.h264");
 
-    demuxer.set_input_ps_file("E://success_data//tmp1.ps");
-    demuxer.set_output_es_video_file("E://success_data//tmp1.h264");
-
-    demuxer.demux_ps_to_es();
+    demuxer.demux_ps_file_to_es_stream("E://tmp1.ps");
 #endif
 
 
@@ -159,7 +157,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from file.
     */
-#if 1
+#if 0
 
     bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer2 demuxer2;
