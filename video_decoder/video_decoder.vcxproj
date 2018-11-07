@@ -124,6 +124,7 @@
   <ItemGroup>
     <ClCompile Include="..\RtpReceiver\RtpReceiver.cpp" />
     <ClCompile Include="..\StreamManager\StreamManager.cpp" />
+    <ClCompile Include="..\utils\bsm_lock.cpp" />
     <ClCompile Include="Demuxer.cpp" />
     <ClCompile Include="Demuxer2.cpp" />
     <ClCompile Include="main.cpp" />
@@ -131,6 +132,7 @@
   <ItemGroup>
     <ClInclude Include="..\RtpReceiver\RtpReceiver.h" />
     <ClInclude Include="..\StreamManager\StreamManager.h" />
+    <ClInclude Include="..\utils\bsm_lock.h" />
     <ClInclude Include="Demuxer.h" />
     <ClInclude Include="Demuxer2.h" />
   </ItemGroup>

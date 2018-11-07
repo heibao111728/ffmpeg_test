@@ -4,7 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "utils\bsm_lock.h"
+
 #define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+using namespace bsm;
+using namespace bsm_utils;
 
 class stream_manager
 {
@@ -53,6 +58,8 @@ private:
     int m_stream_start_point;
     int m_stream_end_point;
     int m_data_length;
+
+    bsm_lock m_lock;
 };
 
 #endif // !__STREAMMANAGER_H__

@@ -25,6 +25,12 @@
     <Filter Include="Source Files\stream_manager">
       <UniqueIdentifier>{d6f0e9e7-c584-4652-a92e-72245fdbb1f8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\lock">
+      <UniqueIdentifier>{9019cafa-72f4-4333-b0fe-084ab52fcd42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lock">
+      <UniqueIdentifier>{27279d08-8c56-48d3-8bcc-41b4b32c6cf6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -42,6 +48,9 @@
     <ClCompile Include="..\StreamManager\StreamManager.cpp">
       <Filter>Source Files\stream_manager</Filter>
     </ClCompile>
+    <ClCompile Include="..\utils\bsm_lock.cpp">
+      <Filter>Source Files\lock</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Demuxer.h">
@@ -55,6 +64,9 @@
     </ClInclude>
     <ClInclude Include="..\StreamManager\StreamManager.h">
       <Filter>Header Files\stream_manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\bsm_lock.h">
+      <Filter>Header Files\lock</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
