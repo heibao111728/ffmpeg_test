@@ -12,8 +12,6 @@
 
 using namespace jrtplib;
 
-//MAX_FRAME_SIZE, 100M，保存获取到的完整视频帧，如果对于特高质量视频帧，可以将该空间扩大
-#define MAX_FRAME_SIZE 10 * 1024 
 #define SDP_SIZE 4 * 1024
 
 typedef struct rtp_header
@@ -95,7 +93,7 @@ public:
         callback_get_svac_stream_fp get_svac_stream);
 
 private:
-    RTPSession m_rtp_session;
+    //RTPSession m_rtp_session;
     char m_sdp_info[SDP_SIZE] = { 0 };
 
     bool m_is_marker_packet;                  //完整帧rtp包头标记

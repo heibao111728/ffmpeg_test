@@ -111,12 +111,10 @@ int callback_push_ps_stream(void *opaque, uint8_t *buf, int data_length)
 #define __MAX_BUFFER_SIZE (2 * 1024 * 1024)
 int main(int argc, char* argv[])
 {
-    WSADATA dat;
-    WSAStartup(MAKEWORD(2, 2), &dat);
-#if 0
     /**
     *   test demuxer, demux stream from file
     */
+#if 0
     demuxer::setup_callback_function(callback_read_data);
     demuxer demuxer;
 
@@ -126,24 +124,16 @@ int main(int argc, char* argv[])
     demuxer.demux_ps_to_es();
 #endif
 
-#if 0
+
+
     /**
-    *   test demuxer2, demux stream from file
+    *   test demuxer2, demux stream from RTP.
     */
-    demuxer2 ps_demuxer;
-
-    ps_demuxer.set_input_ps_file("E://success_data//tmp1.ps");
-    ps_demuxer.set_output_es_video_file("E://success_data//tmp1.h264");
-
-    ps_demuxer.demux_ps_to_es();
-
-    return 0;
-#endif
-
 #if 1
-    /**
-    *   test demuxer, demux stream from RTP.
-    */
+
+    WSADATA dat;
+    WSAStartup(MAKEWORD(2, 2), &dat);
+
     stream_manager::set_capacity_size(4*1024*1024);
 
     CRtpReceiver::setup_callback_function(callback_push_ps_stream, NULL, NULL, NULL);
@@ -152,9 +142,9 @@ int main(int argc, char* argv[])
     rtp_recviver.start_proc();
 
     demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
-    demuxer2 demuxer;
-    //demuxer.set_output_es_video_file("E://demuxer2_netstream.h264");
-    demuxer.demux_ps_to_es_network();
+    demuxer2 demuxer2;
+
+    demuxer2.demux_ps_to_es_network();
 
     while (1)
     {
@@ -162,18 +152,27 @@ int main(int argc, char* argv[])
         Sleep(10);
     }
 
-    //while (1)
-    //{
-    //    if (0 < stream_manager::get_instance()->pull_data(NULL, buffer, __MAX_BUFFER_SIZE))
-    //    {
-    //        write_media_data_to_file("E://rtp_tmp1.ps", buffer, __MAX_BUFFER_SIZE);
-    //    } 
-    //}
+    return 0;
 
-    //if (buffer)
-    //{
-    //    free(buffer);
-    //}
+#endif 
+
+    /**
+    *   test demuxer2, demux stream from file.
+    */
+#if 0
+
+    demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
+    demuxer2 demuxer2;
+
+    demuxer.set_output_es_video_file("E://demuxer2_netstream.h264");
+    demuxer.set_input_ps_file("E://tmp1.ps");
+    demuxer.demux_ps_to_es();
+
+    while (1)
+    {
+        //callback_read_data(NULL, NULL, 0);
+        Sleep(10);
+    }
 
     return 0;
 

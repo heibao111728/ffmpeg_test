@@ -283,15 +283,18 @@ int demuxer2::demux_ps_to_es()
 
                 //查找失败，但文件未读完，则继续读文件
                 //第一步：将缓存中剩余数据移动到缓存最前端；
-                memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+                if(0<processed_size)
+                { 
+                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
 
-                memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-                memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
+                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
-                next_ps_packet_offset = 0;
-                buffer_left_size += processed_size;
-                processed_size = 0;
+                    next_ps_packet_offset = 0;
+                    buffer_left_size += processed_size;
+                    processed_size = 0;
+                }
 
                 //第二步：读取文件数据将缓存区填满。
                 read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file);
@@ -391,20 +394,23 @@ int demuxer2::demux_ps_to_es_network()
             {
                 //查找失败
                 //第一步：将缓存中剩余数据移动到缓存最前端；
-                memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+                //step 1:move left data to buffer header.
+                if(0 < processed_size)
+                { 
+                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
 
-                memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-                memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
+                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
-                next_ps_packet_offset = 0;
-                buffer_left_size += processed_size;
-                processed_size = 0;
+                    next_ps_packet_offset = 0;
+                    buffer_left_size += processed_size;
+                    processed_size = 0;
+                }
 
                 //第二步：调用回调函数将demux2缓存区填满。
+                //step2: call callback function to fill full buffer.
                 read_size = m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
-
-                //buffer_size = read_size + buffer_left_size;
 
                 buffer_left_size -= read_size;
                 if (buffer_left_size > 0)
