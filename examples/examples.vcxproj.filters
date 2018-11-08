@@ -14,4 +14,75 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="vaapi_transcode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vaapi_encode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transcoding.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transcode_aac.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scaling_video.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resampling_audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="remuxing.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="qsvdec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="muxing.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="metadata.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hw_decode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="http_multiclient.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filtering_video.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filtering_audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filter_audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="extract_mvs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="encode_video.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="encode_audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="demuxing_decoding.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="decode_video.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="decode_audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="avio_reading.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="avio_dir_cmd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
 </Project>

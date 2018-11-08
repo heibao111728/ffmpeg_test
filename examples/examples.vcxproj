@@ -74,6 +74,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg_4_0_win32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -110,6 +111,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="avio_dir_cmd.c" />
+    <ClCompile Include="avio_reading.c" />
+    <ClCompile Include="decode_audio.c" />
+    <ClCompile Include="decode_video.c" />
+    <ClCompile Include="demuxing_decoding.c" />
+    <ClCompile Include="encode_audio.c" />
+    <ClCompile Include="encode_video.c" />
+    <ClCompile Include="extract_mvs.c" />
+    <ClCompile Include="filtering_audio.c" />
+    <ClCompile Include="filtering_video.c" />
+    <ClCompile Include="filter_audio.c" />
+    <ClCompile Include="http_multiclient.c" />
+    <ClCompile Include="hw_decode.c" />
+    <ClCompile Include="metadata.c" />
+    <ClCompile Include="muxing.c" />
+    <ClCompile Include="qsvdec.c" />
+    <ClCompile Include="remuxing.c" />
+    <ClCompile Include="resampling_audio.c" />
+    <ClCompile Include="scaling_video.c" />
+    <ClCompile Include="transcode_aac.c" />
+    <ClCompile Include="transcoding.c" />
+    <ClCompile Include="vaapi_encode.c" />
+    <ClCompile Include="vaapi_transcode.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
