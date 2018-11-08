@@ -29,6 +29,7 @@ extern "C"
 
 #include "Demuxer.h"
 #include "stdio.h"
+#include "StreamManager\StreamManager.h"
 
 namespace bsm {
 namespace bsm_video_decoder {
@@ -60,6 +61,7 @@ void bsm_demuxer::set_output_es_audio_file(char* file_name)
 
 bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
 {
+    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
     //AVInputFormat * av_input_formate = NULL;
     AVOutputFormat *av_output_formate = NULL;
 
@@ -72,6 +74,8 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
     AVStream *in_stream_ps = NULL;
     AVStream *out_stream_es_video = NULL;
     AVStream *out_stream_es_audio = NULL;
+
+    AVIOContext *av_io_context_output = NULL;
 
     int videoindex = -1;
     int audioindex = -1;
@@ -97,27 +101,49 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
         return false;
     }
 
-    // 获取输出文件格式信息
-    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
-    if (!av_formate_context_out_video)
+    //**************************
+    //申请一个输出AVIOContext
+    av_io_context_output = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, NULL, m_callback_push_es_video_stream, NULL);
+    if (!av_io_context_output)
     {
-        LOG("Create output context failed.");
-        return false;
+        fprintf(stderr, "avio alloc failed!\n");
+        return -1;
     }
-    else
-    {
-        av_output_formate = av_formate_context_out_video->oformat;
-    }
+    //step3:这一步很关键
+    av_output_formate = av_guess_format("h264", NULL, NULL);
+    av_formate_context_out_video = avformat_alloc_context();
+    av_formate_context_out_video->oformat = av_output_formate;
+    av_formate_context_out_video->pb = av_io_context_output;
 
-    // Open output file
-    if (!(av_output_formate->flags & AVFMT_NOFILE))
-    {
-        if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
-        {
-            LOG("Could not open output file '%s'", m_output_es_video_file_name);
-            return false;
-        }
-    }
+    //**************************
+
+    ////获取输出文件格式信息
+    //avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
+    //if (!av_formate_context_out_video)
+    //{
+    //    LOG("Create output context failed.");
+    //    return false;
+    //}
+    //else
+    //{
+    //    av_output_formate = av_formate_context_out_video->oformat;
+    //}
+
+    //指定输出格式
+    //av_output_formate = av_guess_format("h264", NULL, NULL);
+    //av_formate_context_out_video = avformat_alloc_context();
+    //av_formate_context_out_video->oformat = av_output_formate;
+    
+
+    //// Open output file
+    //if (!(av_output_formate->flags & AVFMT_NOFILE))
+    //{
+    //    if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
+    //    {
+    //        LOG("Could not open output file '%s'", m_output_es_video_file_name);
+    //        return false;
+    //    }
+    //}
 
     //打开输出流
     out_stream_es_video = avformat_new_stream(av_formate_context_out_video, av_formate_context_out_video->video_codec);
@@ -208,81 +234,102 @@ void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_p
     m_callback_push_es_audio_stream = push_es_audio_stream;
 }
 
+FILE *fp_open;
+FILE *fp_write;
+
+//Read File
+int read_buffer(void *opaque, uint8_t *buf, int buf_size) {
+    if (!feof(fp_open)) {
+        int true_size = fread(buf, 1, buf_size-100, fp_open);
+        return true_size;
+    }
+    else {
+        return -1;
+    }
+}
+
+//Write File
+int write_buffer(void *opaque, uint8_t *buf, int buf_size) {
+    if (!feof(fp_write)) {
+        int true_size = fwrite(buf, 1, buf_size, fp_write);
+        return true_size;
+    }
+    else {
+        return -1;
+    }
+}
 
 bool bsm_demuxer::demux_ps_to_es_network()
 {
     uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
-    AVIOContext *av_io_context = NULL;
-    AVInputFormat *av_input_format = NULL;
-    AVFormatContext *av_format_context = NULL;
+    AVIOContext *av_io_context_input = NULL;
+    AVIOContext *av_io_context_output = NULL;
 
-    AVFormatContext *av_formate_context_out_video = NULL;
+    AVInputFormat *av_input_format = NULL;
     AVOutputFormat *av_output_formate = NULL;
+
+    AVFormatContext *av_format_context_input = NULL;
+    AVFormatContext *av_formate_context_out_video = NULL;
+    
     AVStream *in_stream_ps = NULL;
+    AVStream *out_stream_es;
     AVPacket av_packet;
 
     int videoindex = -1;
     int audioindex = -1;
     int frame_index = 0;
 
-    //step1:申请一个AVIOContext
-    av_io_context = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, m_callback_pull_ps_stream, NULL, NULL);
-    if (!av_io_context)
+    int ret;
+
+    unsigned char* inbuffer = NULL;
+    unsigned char* outbuffer = NULL;
+    inbuffer = (unsigned char*)av_malloc(32768);
+    outbuffer = (unsigned char*)av_malloc(32768);
+
+    fp_open = fopen("E://tmp1.ps", "rb");	//视频源文件 
+    fp_write = fopen("E://tmp111.h264", "wb+"); //输出文件
+
+    // input
+    av_format_context_input = avformat_alloc_context();
+    av_io_context_input = avio_alloc_context(inbuffer, 32768, 0, NULL, read_buffer, NULL, NULL);
+    if (av_io_context_input == NULL)
     {
-        fprintf(stderr, "avio alloc failed!\n");
         return -1;
     }
-
-    //step2:探测流格式
-    if (av_probe_input_buffer(av_io_context, &av_input_format, "", NULL, 0, 0) < 0)
+    av_format_context_input->pb = av_io_context_input;
+    av_format_context_input->flags = AVFMT_FLAG_CUSTOM_IO;
+    if ((ret = avformat_open_input(&av_format_context_input, NULL, NULL, NULL)) < 0)
     {
-        fprintf(stderr, "probe failed!\n");
+        av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
+        return ret;
+    }
+
+    if ((ret = avformat_find_stream_info(av_format_context_input, NULL)) < 0)
+    {
+        av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
+        return ret;
+    }
+
+    //output
+    av_io_context_output = avio_alloc_context(outbuffer, 32768, 1, NULL, NULL, write_buffer, NULL);
+    if (av_io_context_output == NULL)
+    {
         return -1;
     }
-    else
-    {
-        fprintf(stdout, "probe success!\n");
-        fprintf(stdout, "format: %s[%s]\n", av_input_format->name, av_input_format->long_name);
-    }
+    //avio_out->write_packet=write_packet;
+    av_formate_context_out_video = avformat_alloc_context();
+    av_formate_context_out_video->pb = av_io_context_output;
+    av_formate_context_out_video->flags = AVFMT_FLAG_CUSTOM_IO;
 
-    //step3:这一步很关键
-    av_format_context = avformat_alloc_context();
-    av_format_context->pb = av_io_context; 
-    
-    //step4:打开流
-    if (avformat_open_input(&av_format_context, "", av_input_format, NULL) < 0)
-    {
-        fprintf(stderr, "avformat open failed.\n");
-        return -1;
-    }
-    else
-    {
-        fprintf(stdout, "open stream success!\n");
-    }
+    av_output_formate = av_guess_format("h264", NULL, NULL);
+    av_formate_context_out_video->oformat = av_output_formate;
 
-    //以下就和文件处理一致了
-
-    // 获取输出文件格式信息
-    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
-    if (!av_formate_context_out_video)
+    out_stream_es = avformat_new_stream(av_formate_context_out_video, NULL);
+    if (!out_stream_es)
     {
-        LOG("Create output context failed.");
-        return false;
-    }
-    else
-    {
-        av_output_formate = av_formate_context_out_video->oformat;
-    }
-
-    // Open output file
-    if (!(av_output_formate->flags & AVFMT_NOFILE))
-    {
-        if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
-        {
-            LOG("Could not open output file '%s'", m_output_es_video_file_name);
-            return false;
-        }
+        av_log(NULL, AV_LOG_ERROR, "Failed allocating output stream\n");
+        return AVERROR_UNKNOWN;
     }
 
     // Write file header
@@ -293,9 +340,9 @@ bool bsm_demuxer::demux_ps_to_es_network()
     }
 
     //获取视频流索引
-    for (int i = 0; i < av_format_context->nb_streams; ++i)
+    for (int i = 0; i < av_format_context_input->nb_streams; ++i)
     {
-        in_stream_ps = av_format_context->streams[i];
+        in_stream_ps = av_format_context_input->streams[i];
 
         if (AVMEDIA_TYPE_VIDEO == in_stream_ps->codecpar->codec_type)
         {
@@ -312,7 +359,7 @@ bool bsm_demuxer::demux_ps_to_es_network()
     while (1)
     {
         // Get an AVPacket
-        if (av_read_frame(av_format_context, &av_packet) < 0)
+        if (av_read_frame(av_format_context_input, &av_packet) < 0)
         {
             LOG("end of file!\n");
             break;
@@ -349,11 +396,12 @@ bool bsm_demuxer::demux_ps_to_es_network()
     }
 
     av_free(media_buffer);
-    avio_context_free(&av_io_context);
-    avformat_free_context(av_format_context);
+    avio_context_free(&av_io_context_input);
+    avio_context_free(&av_io_context_output);
+    avformat_free_context(av_format_context_input);
     avformat_free_context(av_formate_context_out_video);
 
-    return 0;
+    //return 0;
 }
 
 

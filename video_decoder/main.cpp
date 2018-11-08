@@ -84,11 +84,17 @@ int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
 {
     int data_length = 0;
 
-    data_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
-    if (0 < data_length)
+    int recv_time = 0;
+    while (recv_time < 50)
     {
-        LOG("hava receive data, data_length=%d\n", data_length);
+        data_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
+        if (0 < data_length)
+        {
+            LOG("hava receive data, data_length=%d\n", data_length);
+        }
+        recv_time++;
     }
+
     return data_length;
 }
 
@@ -146,12 +152,43 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer, demux stream from file
     */
-#if 1
-    bsm_demuxer::setup_callback_function(NULL, callback_push_es_video_stream, NULL);
+#if 0
+    bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer demuxer;
     demuxer.set_output_es_video_file("E://tmp1.h264");
 
     demuxer.demux_ps_to_es_file("E://tmp1.ps");
+    //demuxer.demux_ps_to_es_network();
+#endif
+
+    /**
+    *   test bsm_demuxer, demux stream from network
+    */
+#if 1
+    WSADATA dat;
+    WSAStartup(MAKEWORD(2, 2), &dat);
+
+    stream_manager::set_capacity_size(4 * 1024 * 1024);
+
+    CRtpReceiver::setup_callback_function(callback_push_ps_stream, NULL, NULL, NULL);
+    CRtpReceiver rtp_recviver;
+    rtp_recviver.set_cleint_ip("192.168.2.102");
+    rtp_recviver.start_proc();
+
+    bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
+    bsm_demuxer demuxer;
+    demuxer.set_output_es_video_file("E://tmp1.h264");
+
+    
+
+
+    //demuxer.demux_ps_to_es_file("E://tmp1.ps");
+    demuxer.demux_ps_to_es_network();
+
+    while (1)
+    {
+        //callback_read_data_to_file(NULL, NULL, 0);
+    }
 #endif
 
 
