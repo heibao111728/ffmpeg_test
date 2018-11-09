@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     bsm_demuxer demuxer;
     demuxer.set_output_es_video_file("E://demuxer_callback_stream_demuxer_file.h264");
 
-    demuxer.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
+    demuxer.demux_ps_to_es_file("E://tmp1.ps");
     //demuxer.demux_ps_to_es_network();
 #endif
 
@@ -233,7 +233,48 @@ int main(int argc, char* argv[])
     bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer2 demuxer2;
 
-    demuxer2.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
+    demuxer2.demux_ps_to_es_file("E://tmp1.ps");
+
+    //unsigned char ps_packet[20];
+    //ps_packet[0] = 0x00;
+    //ps_packet[1] = 0x00;
+    //ps_packet[2] = 0x00;
+    //ps_packet[3] = 0x00;
+    //ps_packet[4] = 0x01;
+    //ps_packet[5] = 0xba;
+    //ps_packet[6] = 0xaa;
+    //ps_packet[7] = 0xbb;
+    //ps_packet[8] = 0xcc;
+    //ps_packet[9] = 0xdd;
+    //ps_packet[10] = 0xee;
+    //ps_packet[11] = 0xff;
+    //ps_packet[12] = 0xaa;
+    //ps_packet[13] = 0xbb;
+    //ps_packet[14] = 0xcc;
+    //ps_packet[15] = 0xdd;
+    //ps_packet[16] = 0x00;
+    //ps_packet[17] = 0x00;
+    //ps_packet[18] = 0x00;
+    //ps_packet[19] = 0xba;
+
+
+    //unsigned char ps_packet_start_code[4];
+    //ps_packet_start_code[0] = 0x00;
+    //ps_packet_start_code[1] = 0x00;
+    //ps_packet_start_code[2] = 0x01;
+    //ps_packet_start_code[3] = 0xba;
+
+    //int ps_packet_length = 0;
+    //int ps_packet_start_position = 0;
+
+    //if (demuxer2.find_next_ps_packet(ps_packet, 20, &ps_packet_start_position, &ps_packet_length))
+    //{
+    //    LOG("find success");
+    //}
+    //else
+    //{
+    //    LOG("not find.");
+    //}
 
     while (1)
     {
@@ -247,201 +288,4 @@ int main(int argc, char* argv[])
 
     //avio_read();
     bsm_logger::get_instance()->uninit_logger();
-}
-
-
-struct buffer_data {
-    uint8_t *ptr;
-    size_t size; ///< size left in the buffer
-};
-
-static int read_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    struct buffer_data *bd = (struct buffer_data *)opaque;
-    buf_size = FFMIN(buf_size, bd->size);
-
-    if (!buf_size)
-        return AVERROR_EOF;
-    printf("ptr:%p size:%zu\n", bd->ptr, bd->size);
-
-    /* copy internal buffer data to buf */
-    memcpy(buf, bd->ptr, buf_size);
-    bd->ptr += buf_size;
-    bd->size -= buf_size;
-
-    return buf_size;
-}
-
-static int write_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    char* file_name = "E://ffmpeg_avio_read_callback_write_data.h264";
-    FILE* p_file = NULL;
-    int write_data_size = 0;
-    if (buf != NULL && buf_size > 0)
-    {
-        if (NULL == p_file && strlen(file_name) > 0)
-        {
-            ::fopen_s(&p_file, file_name, "ab+");
-        }
-
-        if (p_file != NULL)
-        {
-            write_data_size = ::fwrite(buf, buf_size, 1, p_file);
-            ::fclose(p_file);
-            p_file = NULL;
-        }
-    }
-    return write_data_size;
-
-    return buf_size;
-}
-
-int avio_read()
-{
-    AVFormatContext *fmt_ctx = NULL;
-    AVIOContext *avio_ctx = NULL;
-
-    AVStream *out_stream_es_video = NULL;
-    AVStream *in_stream_ps = NULL;
-    int frame_index = 0;
-    int videoindex = -1;
-    AVPacket av_packet;
-
-
-    uint8_t *buffer = NULL, *avio_ctx_buffer = NULL;
-    size_t buffer_size, avio_ctx_buffer_size = 4096;
-    char *input_filename = NULL;
-    int ret = 0;
-    struct buffer_data bd = { 0 };
-
-    input_filename = "E://tmp1.ps";
-
-    /* slurp file content into buffer */
-    ret = av_file_map(input_filename, &buffer, &buffer_size, 0, NULL);
-    if (ret < 0)
-        goto end;
-
-    /* fill opaque structure used by the AVIOContext read callback */
-    bd.ptr = buffer;
-    bd.size = buffer_size;
-
-    if (!(fmt_ctx = avformat_alloc_context())) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-
-    avio_ctx_buffer = (uint8_t *)av_malloc(avio_ctx_buffer_size);
-    if (!avio_ctx_buffer) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-    avio_ctx = avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size,
-        0, &bd, &read_packet, &write_packet, NULL);
-    if (!avio_ctx) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-    fmt_ctx->pb = avio_ctx;
-
-    ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
-    if (ret < 0) {
-        fprintf(stderr, "Could not open input\n");
-        goto end;
-    }
-
-    ret = avformat_find_stream_info(fmt_ctx, NULL);
-    if (ret < 0) {
-        fprintf(stderr, "Could not find stream information\n");
-        goto end;
-    }
-
-    av_dump_format(fmt_ctx, 0, input_filename, 0);
-
-    //打开输出流
-    out_stream_es_video = avformat_new_stream(fmt_ctx, fmt_ctx->video_codec);
-
-    if (!out_stream_es_video)
-    {
-        LOG("Allocating output stream failed.");
-        return false;
-    }
-
-    // Write file header
-    if (avformat_write_header(fmt_ctx, NULL) < 0)
-    {
-        LOG("Error occurred when opening video output file.");
-        return false;
-    }
-
-    //获取视频流索引
-    for (int i = 0; i < fmt_ctx->nb_streams; ++i)
-    {
-        in_stream_ps = fmt_ctx->streams[i];
-
-        if (AVMEDIA_TYPE_VIDEO == in_stream_ps->codecpar->codec_type)
-        {
-            videoindex = i;
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    frame_index = 0;
-
-    while (1)
-    {
-        // Get an AVPacket
-        if (av_read_frame(fmt_ctx, &av_packet) < 0)
-        {
-            LOG("end of file!\n");
-            break;
-        }
-
-        if (videoindex == av_packet.stream_index)
-        {
-            LOG("Write Video Packet. size: %d\t pts: %d\n", av_packet.size, av_packet.pts);
-        }
-        else
-        {
-            continue;
-        }
-
-        // Write
-        if (av_interleaved_write_frame(fmt_ctx, &av_packet) < 0)
-        {
-            LOG("Error when write_frame.");
-            break;
-        }
-
-        LOG("Write %8d frames to output file.", frame_index);
-
-        av_packet_unref(&av_packet);
-
-        ++frame_index;
-    }
-
-    // Write file trailer
-    if (av_write_trailer(fmt_ctx) != 0)
-    {
-        LOG("Error occurred when writing file trailer.");
-        return false;
-    }
-
-end:
-    avformat_close_input(&fmt_ctx);
-    /* note: the internal buffer could have changed, and be != avio_ctx_buffer */
-    if (avio_ctx) {
-        av_freep(&avio_ctx->buffer);
-        av_freep(&avio_ctx);
-    }
-    av_file_unmap(buffer, buffer_size);
-
-    if (ret < 0) {
-        //fprintf(stderr, "Error occurred: %s\n", av_err2str(ret));
-        return 1;
-    }
-
-    return 0;
 }

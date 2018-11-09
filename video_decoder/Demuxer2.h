@@ -160,6 +160,10 @@ public:
     */
     int find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length);
 
+    bool find_next_hx_str2(unsigned char* source, int source_length, unsigned char* seed, int seed_length, int* position);
+
+    bool find_next_ps_packet(unsigned char* source, int source_length, int* ps_packet_start_point, int* ps_packet_length);
+
     /**
     *   description:
     *       demux ps packet to es packet

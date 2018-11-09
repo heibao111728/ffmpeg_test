@@ -43,6 +43,69 @@ int bsm_demuxer2::find_next_hx_str(unsigned char* source, int source_length, uns
     return 0;
 }
 
+bool bsm_demuxer2::find_next_hx_str2(unsigned char* source, int source_length, unsigned char* seed, int seed_length, int* position)
+{
+    if (!source || !seed)
+    {
+        return false;
+    }
+
+    unsigned char* pHeader = source;
+    int total_length = source_length;
+    int processed_length = 0;
+
+    while (total_length - processed_length >= seed_length)
+    {
+        for (int i = 0; i < seed_length && (pHeader[i] == seed[i]); i++)
+        {
+            if (seed_length - 1 == i)
+            {
+                *position = processed_length;
+                return true;
+            }
+        }
+
+        processed_length++;
+        pHeader = source + processed_length;
+    }
+
+    return false;
+}
+
+bool bsm_demuxer2::find_next_ps_packet(unsigned char* source, int source_length, int* ps_packet_start_point, int* ps_packet_length)
+{
+    if (!source)
+    {
+        return false;
+    }
+
+    int _ps_packet_start_point = 0;
+    int _ps_packet_end_point = 0;
+
+    unsigned char ps_packet_start_code[4];
+    ps_packet_start_code[0] = 0x00;
+    ps_packet_start_code[1] = 0x00;
+    ps_packet_start_code[2] = 0x01;
+    ps_packet_start_code[3] = 0xba;
+
+    if (find_next_hx_str2(source, source_length, ps_packet_start_code, 4, &_ps_packet_start_point))
+    {
+        if (find_next_hx_str2(source + 4, source_length - 4, ps_packet_start_code, 4, &_ps_packet_end_point))
+        {
+            *ps_packet_start_point = _ps_packet_start_point;
+            *ps_packet_length = (_ps_packet_end_point - _ps_packet_start_point)+4;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
+
 
 int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
 {
@@ -213,9 +276,6 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     int processed_size = 0;                     //已经解析完的缓存数据大小
     int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
     int read_size = 0;
-    int next_ps_packet_offset = 0;              //缓存中下一个ps包的位移
-
-    int ps_packet_length = 0;                   //ps包长度
 
     bool is_end_of_file = false;
 
@@ -234,6 +294,11 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     ps_packet_start_code[2] = 0x01;
     ps_packet_start_code[3] = 0xba;
 
+    int _ps_packet_start_position = 0;
+    int _ps_packet_length = 0;
+
+    int real_process_ps_packet_size;
+
     errno_t err;
     FILE* pf_ps_file;
 
@@ -249,17 +314,16 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     }
 
     do {
-        ps_packet_length = find_next_hx_str(stream_data_buf + next_ps_packet_offset,
-            MAX_BUFFER_SIZE - next_ps_packet_offset,
-            ps_packet_start_code, 4);
-
-        if (0 != ps_packet_length)
+        if (find_next_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size,
+            &_ps_packet_start_position, &_ps_packet_length))
         {
-            //查找PS包成功, 开始处理
-            processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
+            real_process_ps_packet_size = deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length);
+            if (real_process_ps_packet_size != _ps_packet_length)
+            {
+                LOG("please check ps packe if right.\n");
+            }
 
-            next_ps_packet_offset += ps_packet_length;
-            //buffer_left_size = processed_size;
+            processed_size += _ps_packet_length;
         }
         else
         {
@@ -290,7 +354,6 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
                     memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
                     memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
-                    next_ps_packet_offset = 0;
                     buffer_left_size += processed_size;
                     processed_size = 0;
                 }
