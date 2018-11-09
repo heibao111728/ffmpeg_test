@@ -91,7 +91,7 @@ int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
         data_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
         if (0 < data_length)
         {
-            LOG("hava receive data, data_length=%d\n", data_length);
+            //LOG("hava receive data, data_length=%d\n", data_length);
         }
         recv_time++;
     //}
@@ -101,7 +101,7 @@ int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
 
 int callback_push_es_video_stream(void *opaque, uint8_t *data, int data_length)
 {
-    char* file_name = "E://demuxer_callback_stream.h264";
+    char* file_name = "E://demuxer_callback_stream_demuxer2_file.h264";
     FILE* p_file = NULL;
     int write_data_size = 0;
     if (data != NULL && data_length > 0)
@@ -136,7 +136,7 @@ int callback_push_ps_stream(void *opaque, uint8_t *buf, int data_length)
     write_data_length = stream_manager::get_instance()->push_data(buf, data_length);
     if (0 < write_data_length)
     {
-        LOG("write data, data_length=%d\n", write_data_length);
+        //LOG("write data, data_length=%d\n", write_data_length);
         //read_data_length = stream_manager::get_instance()->pull_data(NULL, buffer, write_data_length);
         //write_media_data_to_file("E://callback_tmp1.ps", buffer, read_data_length);
     }
@@ -162,9 +162,9 @@ int main(int argc, char* argv[])
 #if 0
     bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer demuxer;
-    demuxer.set_output_es_video_file("E://tmp1.h264");
+    demuxer.set_output_es_video_file("E://demuxer_callback_stream_demuxer_file.h264");
 
-    demuxer.demux_ps_to_es_file("E://tmp1.ps");
+    demuxer.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
     //demuxer.demux_ps_to_es_network();
 #endif
 
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from RTP.
     */
-#if 1
+#if 0
 
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);
@@ -228,12 +228,12 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from file.
     */
-#if 0
+#if 1
 
     bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer2 demuxer2;
 
-    demuxer2.demux_ps_to_es_file("E://tmp1.ps");
+    demuxer2.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
 
     while (1)
     {

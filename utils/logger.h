@@ -52,7 +52,7 @@ private:
     {\
         if(NULL != bsm_logger::get_instance()->m_fp_logfile)\
         {\
-            fprintf(bsm_logger::get_instance()->m_fp_logfile, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);\
+            fprintf(bsm_logger::get_instance()->m_fp_logfile, "%s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);\
         }\
         else\
         {\

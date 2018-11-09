@@ -71,7 +71,6 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
         && packet[2] == 0x01
         && packet[3] == 0xba)
     {
-        //ps_head = (ps_packet_header_t*)packet;
         //从ps包头第14个字节的最后3位获取头部填充数据的长度
         ps_packet_header_stuffed_size = packet[13] & 0x07;
 
@@ -379,16 +378,23 @@ int bsm_demuxer2::demux_ps_to_es_network()
             processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
 
             next_ps_packet_offset += ps_packet_length;
-            //buffer_left_size = processed_size;
         }
         else
         {
             //查找失败
             if (0 == processed_size && 0 == buffer_left_size)
             {
-                //缓冲区太小
-                LOG("buffer is too small.\n");
+                LOG("error: Two situations can cause this problem to occur:\n\
+                            1. demuxer2 buffer is too small, need resize it bigger.\n\
+                            2. data in buffer is error, now, we will abandon this data to ensure demuxer run gracefully.(default solution) ");
                 return -1;
+                //memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                //memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+
+                //next_ps_packet_offset = 0;
+                //buffer_left_size = MAX_BUFFER_SIZE;
+                //processed_size = 0;
+                //continue;
             }
             else
             {
@@ -405,10 +411,6 @@ int bsm_demuxer2::demux_ps_to_es_network()
 
                     next_ps_packet_offset = 0;
                     buffer_left_size = processed_size;
-                    if (buffer_left_size > MAX_BUFFER_SIZE)
-                    {
-                        LOG("haha");
-                    }
                     processed_size = 0;
                 }
 
@@ -419,7 +421,7 @@ int bsm_demuxer2::demux_ps_to_es_network()
                 buffer_left_size -= read_size;
                 if (buffer_left_size > 0)
                 {
-                    LOG("outer buffer do'nt have enought data, need wait a moment.\n");
+                    //LOG("outer buffer do'nt have enought data, need wait a moment.\n");
                     continue;
                 }
             }
