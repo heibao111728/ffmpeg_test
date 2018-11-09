@@ -28,7 +28,7 @@ int stream_manager::pull_data(void* op, unsigned char* buffer, int length)
 
     if (length > m_data_length)
     {
-        LOG("stream manager don't have enough data.\n");
+        //LOG("stream manager don't have enough data.\n");
         return 0;
     }
 
@@ -60,7 +60,7 @@ int stream_manager::push_data(unsigned char* data, int length)
 
     if (length > m_capacity - m_data_length)
     {
-        LOG("stream manager don't have enough space.\n");
+        //LOG("stream manager don't have enough space.\n");
         return 0;
     }
 
