@@ -404,7 +404,11 @@ int bsm_demuxer2::demux_ps_to_es_network()
                     memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
                     next_ps_packet_offset = 0;
-                    buffer_left_size += processed_size;
+                    buffer_left_size = processed_size;
+                    if (buffer_left_size > MAX_BUFFER_SIZE)
+                    {
+                        LOG("haha");
+                    }
                     processed_size = 0;
                 }
 

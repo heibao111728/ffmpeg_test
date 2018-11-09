@@ -3,6 +3,7 @@
 #include "Demuxer2.h"
 #include "RtpReceiver\RtpReceiver.h"
 #include "StreamManager\StreamManager.h"
+#include "utils\logger.h"
 
 #define __STDC_CONSTANT_MACROS
 
@@ -85,15 +86,15 @@ int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
     int data_length = 0;
 
     int recv_time = 0;
-    while (recv_time < 50)
-    {
+    //while (recv_time < 50)
+    //{
         data_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
         if (0 < data_length)
         {
             LOG("hava receive data, data_length=%d\n", data_length);
         }
         recv_time++;
-    }
+    //}
 
     return data_length;
 }
@@ -149,6 +150,12 @@ int avio_read();
 
 int main(int argc, char* argv[])
 {
+    bsm_logger::set_log_type(log_type_file);
+    if (!bsm_logger::get_instance()->init_logger("E://bsm_video_decoder.log"))
+    {
+        return -1;
+    }
+
     /**
     *   test bsm_demuxer, demux stream from file
     */
@@ -164,7 +171,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer, demux stream from network
     */
-#if 1
+#if 0
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);
 
@@ -191,7 +198,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from RTP.
     */
-#if 0
+#if 1
 
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);

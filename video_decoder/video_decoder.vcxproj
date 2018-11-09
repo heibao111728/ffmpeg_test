@@ -74,7 +74,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg_4_0_win32\include;$(SolutionDir)jrtplib\include;$(SolutionDir);$(SolutionDir)jthread;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)utils;$(SolutionDir)ffmpeg_4_0_win32\include;$(SolutionDir)jrtplib\include;$(SolutionDir);$(SolutionDir)jthread;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <CompileAs>Default</CompileAs>
     </ClCompile>
@@ -126,6 +126,7 @@
     <ClCompile Include="..\RtpReceiver\RtpReceiver.cpp" />
     <ClCompile Include="..\StreamManager\StreamManager.cpp" />
     <ClCompile Include="..\utils\bsm_lock.cpp" />
+    <ClCompile Include="..\utils\logger.cpp" />
     <ClCompile Include="Demuxer.cpp" />
     <ClCompile Include="Demuxer2.cpp" />
     <ClCompile Include="main.cpp" />
@@ -134,6 +135,7 @@
     <ClInclude Include="..\RtpReceiver\RtpReceiver.h" />
     <ClInclude Include="..\StreamManager\StreamManager.h" />
     <ClInclude Include="..\utils\bsm_lock.h" />
+    <ClInclude Include="..\utils\logger.h" />
     <ClInclude Include="Demuxer.h" />
     <ClInclude Include="Demuxer2.h" />
   </ItemGroup>

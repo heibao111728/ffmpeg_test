@@ -31,6 +31,12 @@
     <Filter Include="Source Files\lock">
       <UniqueIdentifier>{27279d08-8c56-48d3-8bcc-41b4b32c6cf6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\logger">
+      <UniqueIdentifier>{4f0f4251-b75c-457f-80db-0b4164e42eb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\logger">
+      <UniqueIdentifier>{7b53c408-ddde-4697-baaf-bdba0a747d9c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -51,6 +57,9 @@
     <ClCompile Include="..\utils\bsm_lock.cpp">
       <Filter>Source Files\lock</Filter>
     </ClCompile>
+    <ClCompile Include="..\utils\logger.cpp">
+      <Filter>Source Files\logger</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Demuxer.h">
@@ -67,6 +76,9 @@
     </ClInclude>
     <ClInclude Include="..\utils\bsm_lock.h">
       <Filter>Header Files\lock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\logger.h">
+      <Filter>Header Files\logger</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
