@@ -101,49 +101,33 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
         return false;
     }
 
-    //**************************
-    //申请一个输出AVIOContext
-    av_io_context_output = avio_alloc_context(media_buffer, BUF_SIZE, 0, NULL, NULL, m_callback_push_es_video_stream, NULL);
-    if (!av_io_context_output)
+    //获取输出文件格式信息
+    avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
+    if (!av_formate_context_out_video)
     {
-        fprintf(stderr, "avio alloc failed!\n");
-        return -1;
+        LOG("Create output context failed.");
+        return false;
     }
-    //step3:这一步很关键
-    av_output_formate = av_guess_format("h264", NULL, NULL);
-    av_formate_context_out_video = avformat_alloc_context();
-    av_formate_context_out_video->oformat = av_output_formate;
-    av_formate_context_out_video->pb = av_io_context_output;
-
-    //**************************
-
-    ////获取输出文件格式信息
-    //avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
-    //if (!av_formate_context_out_video)
-    //{
-    //    LOG("Create output context failed.");
-    //    return false;
-    //}
-    //else
-    //{
-    //    av_output_formate = av_formate_context_out_video->oformat;
-    //}
+    else
+    {
+        av_output_formate = av_formate_context_out_video->oformat;
+    }
 
     //指定输出格式
-    //av_output_formate = av_guess_format("h264", NULL, NULL);
+    //av_output_format = av_guess_format("h264", NULL, NULL);
     //av_formate_context_out_video = avformat_alloc_context();
-    //av_formate_context_out_video->oformat = av_output_formate;
+    //av_formate_context_out_video->oformat = av_output_format;
     
 
-    //// Open output file
-    //if (!(av_output_formate->flags & AVFMT_NOFILE))
-    //{
-    //    if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
-    //    {
-    //        LOG("Could not open output file '%s'", m_output_es_video_file_name);
-    //        return false;
-    //    }
-    //}
+    // Open output file
+    if (!(av_output_formate->flags & AVFMT_NOFILE))
+    {
+        if (avio_open(&av_formate_context_out_video->pb, m_output_es_video_file_name, AVIO_FLAG_WRITE) < 0)
+        {
+            LOG("Could not open output file '%s'", m_output_es_video_file_name);
+            return false;
+        }
+    }
 
     //打开输出流
     out_stream_es_video = avformat_new_stream(av_formate_context_out_video, av_formate_context_out_video->video_codec);
@@ -235,7 +219,6 @@ void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_p
 }
 
 FILE *fp_open;
-FILE *fp_write;
 
 //Read File
 int read_buffer(void *opaque, uint8_t *buf, int buf_size) {
@@ -248,26 +231,13 @@ int read_buffer(void *opaque, uint8_t *buf, int buf_size) {
     }
 }
 
-//Write File
-int write_buffer(void *opaque, uint8_t *buf, int buf_size) {
-    if (!feof(fp_write)) {
-        int true_size = fwrite(buf, 1, buf_size, fp_write);
-        return true_size;
-    }
-    else {
-        return -1;
-    }
-}
-
 bool bsm_demuxer::demux_ps_to_es_network()
 {
-    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
-
     AVIOContext *av_io_context_input = NULL;
     AVIOContext *av_io_context_output = NULL;
 
-    AVInputFormat *av_input_format = NULL;
-    AVOutputFormat *av_output_formate = NULL;
+    AVInputFormat * input_formate = NULL;
+    AVOutputFormat *av_output_format = NULL;
 
     AVFormatContext *av_format_context_input = NULL;
     AVFormatContext *av_formate_context_out_video = NULL;
@@ -282,28 +252,30 @@ bool bsm_demuxer::demux_ps_to_es_network()
 
     int ret;
 
-    unsigned char* inbuffer = NULL;
-    unsigned char* outbuffer = NULL;
-    inbuffer = (unsigned char*)av_malloc(32768);
-    outbuffer = (unsigned char*)av_malloc(32768);
+    unsigned char* input_buffer = (unsigned char*)av_malloc(32768);
+    unsigned char* output_buffer = (unsigned char*)av_malloc(32768);
 
     fp_open = fopen("E://tmp1.ps", "rb");	//视频源文件 
-    fp_write = fopen("E://tmp111.h264", "wb+"); //输出文件
 
     // input
     av_format_context_input = avformat_alloc_context();
-    av_io_context_input = avio_alloc_context(inbuffer, 32768, 0, NULL, read_buffer, NULL, NULL);
+    av_io_context_input = avio_alloc_context(input_buffer, 32768, 0, NULL, read_buffer, NULL, NULL);
     if (av_io_context_input == NULL)
     {
         return -1;
     }
     av_format_context_input->pb = av_io_context_input;
     av_format_context_input->flags = AVFMT_FLAG_CUSTOM_IO;
+
+
     if ((ret = avformat_open_input(&av_format_context_input, NULL, NULL, NULL)) < 0)
     {
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
         return ret;
     }
+
+    input_formate = av_find_input_format("mpeg");
+    av_format_context_input->iformat = input_formate;
 
     if ((ret = avformat_find_stream_info(av_format_context_input, NULL)) < 0)
     {
@@ -312,18 +284,18 @@ bool bsm_demuxer::demux_ps_to_es_network()
     }
 
     //output
-    av_io_context_output = avio_alloc_context(outbuffer, 32768, 1, NULL, NULL, write_buffer, NULL);
+    av_io_context_output = avio_alloc_context(output_buffer, 32768, 1, NULL, NULL, m_callback_push_es_video_stream, NULL);
     if (av_io_context_output == NULL)
     {
         return -1;
     }
-    //avio_out->write_packet=write_packet;
+
     av_formate_context_out_video = avformat_alloc_context();
     av_formate_context_out_video->pb = av_io_context_output;
     av_formate_context_out_video->flags = AVFMT_FLAG_CUSTOM_IO;
 
-    av_output_formate = av_guess_format("h264", NULL, NULL);
-    av_formate_context_out_video->oformat = av_output_formate;
+    av_output_format = av_guess_format("h264", NULL, NULL);
+    av_formate_context_out_video->oformat = av_output_format;
 
     out_stream_es = avformat_new_stream(av_formate_context_out_video, NULL);
     if (!out_stream_es)
@@ -361,7 +333,7 @@ bool bsm_demuxer::demux_ps_to_es_network()
         // Get an AVPacket
         if (av_read_frame(av_format_context_input, &av_packet) < 0)
         {
-            LOG("end of file!\n");
+            LOG("have done!\n");
             break;
         }
 
@@ -395,13 +367,12 @@ bool bsm_demuxer::demux_ps_to_es_network()
         return false;
     }
 
-    av_free(media_buffer);
+    av_free(input_buffer);
+    av_free(output_buffer);
     avio_context_free(&av_io_context_input);
     avio_context_free(&av_io_context_output);
     avformat_free_context(av_format_context_input);
     avformat_free_context(av_formate_context_out_video);
-
-    //return 0;
 }
 
 

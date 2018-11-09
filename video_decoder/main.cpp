@@ -177,12 +177,7 @@ int main(int argc, char* argv[])
 
     bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer demuxer;
-    demuxer.set_output_es_video_file("E://tmp1.h264");
 
-    
-
-
-    //demuxer.demux_ps_to_es_file("E://tmp1.ps");
     demuxer.demux_ps_to_es_network();
 
     while (1)
@@ -208,8 +203,8 @@ int main(int argc, char* argv[])
     rtp_recviver.set_cleint_ip("192.168.2.102");
     rtp_recviver.start_proc();
 
-    demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
-    demuxer2 demuxer2;
+    bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
+    bsm_demuxer2 demuxer2;
 
     demuxer2.demux_ps_to_es_network();
 
