@@ -5,8 +5,7 @@
 #include <stdlib.h>
 
 #include "utils\bsm_lock.h"
-
-#define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#include "utils\logger.h"
 
 using namespace bsm;
 using namespace bsm_utils;

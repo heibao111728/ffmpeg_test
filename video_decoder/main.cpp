@@ -246,6 +246,7 @@ int main(int argc, char* argv[])
 #endif 
 
     //avio_read();
+    bsm_logger::get_instance()->uninit_logger();
 }
 
 
