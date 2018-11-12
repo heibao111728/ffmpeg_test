@@ -7,10 +7,6 @@ namespace bsm{
 namespace bsm_video_decoder{
 
 #define MAX_BUFFER_SIZE (1 * 1024 * 1024)
-//#define MAX_FILE_NAME_LENGTH___BSM_DEMUXER2 (60)
-
-//logger
-//#define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s\n%s:%d:" fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 // PES 包stream_id 之后的两个字节中存放该PES包的长度
 typedef union littel_endian_size

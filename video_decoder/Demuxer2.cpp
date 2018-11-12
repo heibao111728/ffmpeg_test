@@ -94,6 +94,7 @@ bool bsm_demuxer2::find_next_ps_packet(unsigned char* source, int source_length,
         {
             *ps_packet_start_point = _ps_packet_start_point;
             *ps_packet_length = (_ps_packet_end_point - _ps_packet_start_point)+4;
+            return true;
         }
         else
         {
@@ -234,7 +235,7 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
             }
             if (packet_total_length - packet_processed_length < 0)
             {
-                LOG("error, please check if src ps file formate is right\n");
+                LOG("error, please check if src ps packet formate is right\n");
                 return packet_total_length;
             }
         }
@@ -306,7 +307,7 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     }
     else
     {
-        printf("The file '%s' was not opened\n", ps_file_name);
+        printf("failure, when open The file '%s'.\n", ps_file_name);
         return -1;
     }
 
@@ -362,7 +363,10 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
                 if (0 < _ps_packet_start_position)
                 {
                     LOG("have find first PS packet.");
-
+                    if (0 < processed_size)
+                    {
+                        LOG("error : 0 < processed_size && 0 < _ps_packet_start_position");
+                    }
                     memset(tmp_data_buf, 0x00, buffer_capacity);
                     memcpy(tmp_data_buf, stream_data_buf + _ps_packet_start_position, buffer_capacity - _ps_packet_start_position);
 
@@ -424,17 +428,11 @@ int bsm_demuxer2::demux_ps_to_es_network()
     int buffer_size = 0;                        //buffer 中当前数据大小
     int processed_size = 0;                     //已经解析完的缓存数据大小
     int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
-    int read_size = 0;
-    int next_ps_packet_offset = 0;              //缓存中下一个ps包的位移
-
-    int ps_packet_length = 0;                   //ps包长度
 
     int _ps_packet_start_position = 0;
     int _ps_packet_length = 0;
 
     int real_process_ps_packet_size;
-
-    bool is_end_of_file = false;
 
     unsigned char* stream_data_buf = NULL;
     unsigned char* tmp_data_buf = NULL;
@@ -451,141 +449,76 @@ int bsm_demuxer2::demux_ps_to_es_network()
     ps_packet_start_code[2] = 0x01;
     ps_packet_start_code[3] = 0xba;
 
-    //buffer_left_size = MAX_BUFFER_SIZE;
-
     do {
-        //ps_packet_length = find_next_hx_str(stream_data_buf + next_ps_packet_offset,
-        //    MAX_BUFFER_SIZE - next_ps_packet_offset,
-        //    ps_packet_start_code, 4);
-
-        //if (0 != ps_packet_length)
-        //{
-        //    //查找PS包成功, 开始处理
-        //    processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
-
-        //    next_ps_packet_offset += ps_packet_length;
-        //}
-        //else
-        //{
-        //    //查找失败
-        //    if (0 == processed_size && 0 == buffer_left_size)
-        //    {
-        //        LOG("error: Two situations can cause this problem to occur:\n\
-        //                    1. demuxer2 buffer is too small, need resize it bigger.\n\
-        //                    2. data in buffer is error, now, we will abandon this data to ensure demuxer run gracefully.(default solution) ");
-        //        return -1;
-        //        //memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-        //        //memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-
-        //        //next_ps_packet_offset = 0;
-        //        //buffer_left_size = MAX_BUFFER_SIZE;
-        //        //processed_size = 0;
-        //        //continue;
-        //    }
-        //    else
-        //    {
-        //        //查找失败
-        //        //第一步：将缓存中剩余数据移动到缓存最前端；
-        //        //step 1:move left data to buffer header.
-        //        if(0 < processed_size)
-        //        { 
-        //            memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-        //            memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
-
-        //            memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-        //            memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
-
-        //            next_ps_packet_offset = 0;
-        //            buffer_left_size = processed_size;
-        //            processed_size = 0;
-        //        }
-
-        //        //第二步：调用回调函数将demux2缓存区填满。
-        //        //step2: call callback function to fill full buffer.
-        //        read_size = m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
-
-        //        buffer_left_size -= read_size;
-        //        if (buffer_left_size > 0)
-        //        {
-        //            //LOG("outer buffer do'nt have enought data, need wait a moment.\n");
-        //            continue;
-        //        }
-        //    }
-        //}
-        if (find_next_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size,
+        if (find_next_ps_packet(stream_data_buf + processed_size, buffer_capacity - processed_size,
             &_ps_packet_start_position, &_ps_packet_length))
         {
-            real_process_ps_packet_size = deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length);
-            if (real_process_ps_packet_size != _ps_packet_length)
+            if (_ps_packet_length != deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length))
             {
-                LOG("please check ps packe if right.\n");
+                LOG("please check if ps packe is right.\n");
             }
 
             processed_size += _ps_packet_length;
+            buffer_size = buffer_capacity - processed_size;
         }
         else
         {
-            //查找失败
-            if (buffer_size == buffer_capacity)
+            if (buffer_size < buffer_capacity)
             {
-                //缓冲区太小
-                LOG("buffer is too small.\n");
                 if (0 < processed_size)
                 {
-                    LOG("why this hapen.\n");
-                }
+                    memset(tmp_data_buf, 0x00, buffer_capacity);
+                    memcpy(tmp_data_buf, stream_data_buf + processed_size, buffer_capacity - processed_size);
 
-                memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memset(stream_data_buf, 0x00, buffer_capacity);
+                    memcpy(stream_data_buf, tmp_data_buf, buffer_capacity - processed_size);
 
-                buffer_size = 0;
-                buffer_left_size = MAX_BUFFER_SIZE;
-                processed_size = 0;
-            }            
-            else 
-            {
-                if (0<processed_size)
-                {
-                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
-
-                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
-
-                    buffer_left_size += processed_size;
+                    buffer_left_size = processed_size;
                     processed_size = 0;
                 }
 
-                //第二步：读取文件数据将缓存区填满。
-                //read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file);
-                //step2: call callback function to fill full buffer.
-
-                if (0 == buffer_left_size)
+                //read data from network, to fill buffer.
+                if (buffer_left_size == m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size))
                 {
-                    LOG("buffer_left_size is 0, now.\n");
-                    if (0 == processed_size && buffer_size != buffer_capacity)
-                    {
-                        LOG("processed_size is 0, but ");
-                    }
+                    buffer_size = buffer_capacity;
                 }
 
-                read_size = m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
-                buffer_size = read_size;
-
-                if (0 < read_size)
+                continue;
+            }
+            else if (buffer_size == buffer_capacity)
+            {
+                if (0 < _ps_packet_start_position)
                 {
-                    LOG("read data success, read size %d.\n", read_size);
-                }
+                    LOG("have find first PS packet.");
 
-                buffer_left_size -= read_size;
-                if (buffer_left_size > 0)
-                {
-                    LOG("src buffer do'nt have enought data, need wait a moment.\n");
-                    continue;
+                    memset(tmp_data_buf, 0x00, buffer_capacity);
+                    memcpy(tmp_data_buf, stream_data_buf + _ps_packet_start_position, buffer_capacity - _ps_packet_start_position);
+
+                    memset(stream_data_buf, 0x00, buffer_capacity);
+                    memcpy(stream_data_buf, tmp_data_buf, buffer_capacity - _ps_packet_start_position);
+
+                    buffer_size = buffer_capacity - _ps_packet_start_position;
+                    buffer_left_size = _ps_packet_start_position;
+                    processed_size = 0;
                 }
+                else
+                {
+                    LOG("buffer is too small.\n");
+
+                    memset(tmp_data_buf, 0x00, buffer_capacity);
+                    memset(stream_data_buf, 0x00, buffer_capacity);
+                    buffer_size = 0;
+                    buffer_left_size = buffer_capacity;
+                    processed_size = 0;
+                }
+            }
+            else
+            {
+                LOG("error : buffer_size > buffer_capacity");
             }
         }
     } while (true);
+
 
     //release memory
     if (NULL != stream_data_buf)
