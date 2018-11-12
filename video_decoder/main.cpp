@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer, demux stream from network
     */
-#if 1
+#if 0
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);
 
@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from RTP.
     */
-#if 0
+#if 1
 
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);

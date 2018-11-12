@@ -94,6 +94,7 @@ bool bsm_demuxer2::find_next_ps_packet(unsigned char* source, int source_length,
         {
             *ps_packet_start_point = _ps_packet_start_point;
             *ps_packet_length = (_ps_packet_end_point - _ps_packet_start_point)+4;
+            return true;
         }
         else
         {
