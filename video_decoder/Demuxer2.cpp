@@ -273,9 +273,16 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
 {
     int buffer_capacity = MAX_BUFFER_SIZE;      //buffer total size
     int buffer_size = 0;                        //buffer current size
-    int processed_size = 0;                     //已经解析完的缓存数据大小
-    int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
+    int buffer_left_size = MAX_BUFFER_SIZE;     
+    int processed_size = 0;                     
+
+    int data_left_size = 0;
     int read_size = 0;
+
+    int _ps_packet_start_position = 0;
+    int _ps_packet_length = 0;
+
+    int real_processed_ps_packet_size;
 
     bool is_end_of_file = false;
 
@@ -293,11 +300,6 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     ps_packet_start_code[1] = 0x00;
     ps_packet_start_code[2] = 0x01;
     ps_packet_start_code[3] = 0xba;
-
-    int _ps_packet_start_position = 0;
-    int _ps_packet_length = 0;
-
-    int real_process_ps_packet_size;
 
     errno_t err;
     FILE* pf_ps_file;
@@ -317,36 +319,27 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
         if (find_next_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size,
             &_ps_packet_start_position, &_ps_packet_length))
         {
-            real_process_ps_packet_size = deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length);
-            if (real_process_ps_packet_size != _ps_packet_length)
+            real_processed_ps_packet_size = deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length);
+            if (real_processed_ps_packet_size != _ps_packet_length)
             {
                 LOG("please check ps packe if right.\n");
             }
 
             processed_size += _ps_packet_length;
+            buffer_size = MAX_BUFFER_SIZE - processed_size;
         }
         else
         {
-            //查找失败
-            if (0 == processed_size && (buffer_size == buffer_capacity))
+            if (is_end_of_file)
             {
-                //缓冲区太小
-                LOG("buffer is too small.\n");
-                return -1;
+                //deal last PS packet in buffer.
+                deal_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+                break;
             }
-            else 
+            
+            if (buffer_size < buffer_capacity)
             {
-                //缓冲区足够，缓冲区中剩余的数据不足一整个PS packet， 需要重新读取文件
-                if (is_end_of_file)
-                {
-                    //处理最后缓存中的数据, 如果不做处理则丢失最后一个PS包数据
-                    deal_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
-                    break;
-                }
-
-                //查找失败，但文件未读完，则继续读文件
-                //第一步：将缓存中剩余数据移动到缓存最前端；
-                if(0<processed_size)
+                if(0 < processed_size)
                 { 
                     memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
                     memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
@@ -354,13 +347,14 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
                     memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
                     memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
-                    buffer_left_size += processed_size;
+                    data_left_size = MAX_BUFFER_SIZE - processed_size;
+                    buffer_left_size = processed_size;
                     processed_size = 0;
                 }
 
-                //第二步：读取文件数据将缓存区填满。
+                //read data from file to fill buffer.
                 read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file);
-                buffer_size = read_size;
+                buffer_size = read_size + data_left_size;
 
                 buffer_left_size -= read_size;
                 if (buffer_left_size > 0)
@@ -369,6 +363,40 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
                     is_end_of_file = true;
                     continue;
                 }
+           
+            }
+            else if (buffer_size == buffer_capacity)
+            {
+                if (0 < _ps_packet_start_position)
+                {
+                    LOG("find first PS packet.");
+
+                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memcpy(tmp_data_buf, stream_data_buf + _ps_packet_start_position, MAX_BUFFER_SIZE - _ps_packet_start_position);
+
+                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - _ps_packet_start_position);
+
+                    buffer_size = MAX_BUFFER_SIZE - _ps_packet_start_position;
+                    buffer_left_size = _ps_packet_start_position;
+                    processed_size = 0;
+                    data_left_size = MAX_BUFFER_SIZE - _ps_packet_start_position;
+                }
+                else
+                { 
+                    LOG("buffer is too small.\n");
+
+                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    buffer_size = 0;
+                    buffer_left_size = MAX_BUFFER_SIZE;
+                    processed_size = 0;
+                    data_left_size = 0;
+                }
+            }
+            else
+            {
+                LOG("error : buffer_size > buffer_capacity");
             }
         }
     } while (true);
@@ -403,13 +431,18 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
 int bsm_demuxer2::demux_ps_to_es_network()
 {
     int buffer_capacity = MAX_BUFFER_SIZE;      //buffer 总容量
-    //int buffer_size = 0;                        //buffer 中当前数据大小
+    int buffer_size = 0;                        //buffer 中当前数据大小
     int processed_size = 0;                     //已经解析完的缓存数据大小
     int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
     int read_size = 0;
     int next_ps_packet_offset = 0;              //缓存中下一个ps包的位移
 
     int ps_packet_length = 0;                   //ps包长度
+
+    int _ps_packet_start_position = 0;
+    int _ps_packet_length = 0;
+
+    int real_process_ps_packet_size;
 
     bool is_end_of_file = false;
 
@@ -431,60 +464,133 @@ int bsm_demuxer2::demux_ps_to_es_network()
     //buffer_left_size = MAX_BUFFER_SIZE;
 
     do {
-        ps_packet_length = find_next_hx_str(stream_data_buf + next_ps_packet_offset,
-            MAX_BUFFER_SIZE - next_ps_packet_offset,
-            ps_packet_start_code, 4);
+        //ps_packet_length = find_next_hx_str(stream_data_buf + next_ps_packet_offset,
+        //    MAX_BUFFER_SIZE - next_ps_packet_offset,
+        //    ps_packet_start_code, 4);
 
-        if (0 != ps_packet_length)
+        //if (0 != ps_packet_length)
+        //{
+        //    //查找PS包成功, 开始处理
+        //    processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
+
+        //    next_ps_packet_offset += ps_packet_length;
+        //}
+        //else
+        //{
+        //    //查找失败
+        //    if (0 == processed_size && 0 == buffer_left_size)
+        //    {
+        //        LOG("error: Two situations can cause this problem to occur:\n\
+        //                    1. demuxer2 buffer is too small, need resize it bigger.\n\
+        //                    2. data in buffer is error, now, we will abandon this data to ensure demuxer run gracefully.(default solution) ");
+        //        return -1;
+        //        //memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+        //        //memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+
+        //        //next_ps_packet_offset = 0;
+        //        //buffer_left_size = MAX_BUFFER_SIZE;
+        //        //processed_size = 0;
+        //        //continue;
+        //    }
+        //    else
+        //    {
+        //        //查找失败
+        //        //第一步：将缓存中剩余数据移动到缓存最前端；
+        //        //step 1:move left data to buffer header.
+        //        if(0 < processed_size)
+        //        { 
+        //            memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+        //            memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+
+        //            memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+        //            memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
+
+        //            next_ps_packet_offset = 0;
+        //            buffer_left_size = processed_size;
+        //            processed_size = 0;
+        //        }
+
+        //        //第二步：调用回调函数将demux2缓存区填满。
+        //        //step2: call callback function to fill full buffer.
+        //        read_size = m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
+
+        //        buffer_left_size -= read_size;
+        //        if (buffer_left_size > 0)
+        //        {
+        //            //LOG("outer buffer do'nt have enought data, need wait a moment.\n");
+        //            continue;
+        //        }
+        //    }
+        //}
+        if (find_next_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size,
+            &_ps_packet_start_position, &_ps_packet_length))
         {
-            //查找PS包成功, 开始处理
-            processed_size += deal_ps_packet(stream_data_buf + next_ps_packet_offset, ps_packet_length);
+            real_process_ps_packet_size = deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length);
+            if (real_process_ps_packet_size != _ps_packet_length)
+            {
+                LOG("please check ps packe if right.\n");
+            }
 
-            next_ps_packet_offset += ps_packet_length;
+            processed_size += _ps_packet_length;
         }
         else
         {
             //查找失败
-            if (0 == processed_size && 0 == buffer_left_size)
+            if (buffer_size == buffer_capacity)
             {
-                LOG("error: Two situations can cause this problem to occur:\n\
-                            1. demuxer2 buffer is too small, need resize it bigger.\n\
-                            2. data in buffer is error, now, we will abandon this data to ensure demuxer run gracefully.(default solution) ");
-                return -1;
-                //memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                //memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                //缓冲区太小
+                LOG("buffer is too small.\n");
+                if (0 < processed_size)
+                {
+                    LOG("why this hapen.\n");
+                }
 
-                //next_ps_packet_offset = 0;
-                //buffer_left_size = MAX_BUFFER_SIZE;
-                //processed_size = 0;
-                //continue;
-            }
-            else
+                memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
+                memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+
+                buffer_size = 0;
+                buffer_left_size = MAX_BUFFER_SIZE;
+                processed_size = 0;
+            }            
+            else 
             {
-                //查找失败
-                //第一步：将缓存中剩余数据移动到缓存最前端；
-                //step 1:move left data to buffer header.
-                if(0 < processed_size)
-                { 
+                if (0<processed_size)
+                {
                     memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
                     memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
 
                     memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
                     memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
 
-                    next_ps_packet_offset = 0;
-                    buffer_left_size = processed_size;
+                    buffer_left_size += processed_size;
                     processed_size = 0;
                 }
 
-                //第二步：调用回调函数将demux2缓存区填满。
+                //第二步：读取文件数据将缓存区填满。
+                //read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file);
                 //step2: call callback function to fill full buffer.
+
+                if (0 == buffer_left_size)
+                {
+                    LOG("buffer_left_size is 0, now.\n");
+                    if (0 == processed_size && buffer_size != buffer_capacity)
+                    {
+                        LOG("processed_size is 0, but ");
+                    }
+                }
+
                 read_size = m_callback_pull_ps_stream(NULL, stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size);
+                buffer_size = read_size;
+
+                if (0 < read_size)
+                {
+                    LOG("read data success, read size %d.\n", read_size);
+                }
 
                 buffer_left_size -= read_size;
                 if (buffer_left_size > 0)
                 {
-                    //LOG("outer buffer do'nt have enought data, need wait a moment.\n");
+                    LOG("src buffer do'nt have enought data, need wait a moment.\n");
                     continue;
                 }
             }
