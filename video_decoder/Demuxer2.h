@@ -6,7 +6,7 @@
 namespace bsm{
 namespace bsm_video_decoder{
 
-#define MAX_BUFFER_SIZE (1 * 1024 * 1024)
+#define MAX_BUFFER_SIZE (16 * 1024 * 1024)
 //#define MAX_FILE_NAME_LENGTH___BSM_DEMUXER2 (60)
 
 //logger

@@ -259,7 +259,7 @@ bool bsm_demuxer::demux_ps_to_es_network()
 
     // input
     av_format_context_input = avformat_alloc_context();
-    av_io_context_input = avio_alloc_context(input_buffer, 32768, 0, NULL, read_buffer, NULL, NULL);
+    av_io_context_input = avio_alloc_context(input_buffer, 32768, 0, NULL, m_callback_pull_ps_stream, NULL, NULL);
     if (av_io_context_input == NULL)
     {
         return -1;
