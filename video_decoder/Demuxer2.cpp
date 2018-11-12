@@ -276,13 +276,8 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     int buffer_left_size = MAX_BUFFER_SIZE;     
     int processed_size = 0;                     
 
-    int data_left_size = 0;
-    int read_size = 0;
-
     int _ps_packet_start_position = 0;
     int _ps_packet_length = 0;
-
-    int real_processed_ps_packet_size;
 
     bool is_end_of_file = false;
 
@@ -316,24 +311,23 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     }
 
     do {
-        if (find_next_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size,
+        if (find_next_ps_packet(stream_data_buf + processed_size, buffer_capacity - processed_size,
             &_ps_packet_start_position, &_ps_packet_length))
         {
-            real_processed_ps_packet_size = deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length);
-            if (real_processed_ps_packet_size != _ps_packet_length)
+            if (_ps_packet_length != deal_ps_packet(stream_data_buf + _ps_packet_start_position + processed_size, _ps_packet_length))
             {
-                LOG("please check ps packe if right.\n");
+                LOG("please check if ps packe is right.\n");
             }
 
             processed_size += _ps_packet_length;
-            buffer_size = MAX_BUFFER_SIZE - processed_size;
+            buffer_size = buffer_capacity - processed_size;
         }
         else
         {
             if (is_end_of_file)
             {
                 //deal last PS packet in buffer.
-                deal_ps_packet(stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+                deal_ps_packet(stream_data_buf + processed_size, buffer_capacity - processed_size);
                 break;
             }
             
@@ -341,57 +335,53 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
             {
                 if(0 < processed_size)
                 { 
-                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memcpy(tmp_data_buf, stream_data_buf + processed_size, MAX_BUFFER_SIZE - processed_size);
+                    memset(tmp_data_buf, 0x00, buffer_capacity);
+                    memcpy(tmp_data_buf, stream_data_buf + processed_size, buffer_capacity - processed_size);
 
-                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - processed_size);
+                    memset(stream_data_buf, 0x00, buffer_capacity);
+                    memcpy(stream_data_buf, tmp_data_buf, buffer_capacity - processed_size);
 
-                    data_left_size = MAX_BUFFER_SIZE - processed_size;
                     buffer_left_size = processed_size;
                     processed_size = 0;
                 }
 
                 //read data from file to fill buffer.
-                read_size = ::fread_s(stream_data_buf + (MAX_BUFFER_SIZE - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file);
-                buffer_size = read_size + data_left_size;
-
-                buffer_left_size -= read_size;
-                if (buffer_left_size > 0)
+                if(buffer_left_size > fread_s(stream_data_buf + (buffer_capacity - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file))
                 {
                     LOG("end of file.\n");
                     is_end_of_file = true;
-                    continue;
                 }
-           
+                else
+                {
+                    buffer_size = buffer_capacity;
+                }
+                continue;
             }
             else if (buffer_size == buffer_capacity)
             {
                 if (0 < _ps_packet_start_position)
                 {
-                    LOG("find first PS packet.");
+                    LOG("have find first PS packet.");
 
-                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memcpy(tmp_data_buf, stream_data_buf + _ps_packet_start_position, MAX_BUFFER_SIZE - _ps_packet_start_position);
+                    memset(tmp_data_buf, 0x00, buffer_capacity);
+                    memcpy(tmp_data_buf, stream_data_buf + _ps_packet_start_position, buffer_capacity - _ps_packet_start_position);
 
-                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memcpy(stream_data_buf, tmp_data_buf, MAX_BUFFER_SIZE - _ps_packet_start_position);
+                    memset(stream_data_buf, 0x00, buffer_capacity);
+                    memcpy(stream_data_buf, tmp_data_buf, buffer_capacity - _ps_packet_start_position);
 
-                    buffer_size = MAX_BUFFER_SIZE - _ps_packet_start_position;
+                    buffer_size = buffer_capacity - _ps_packet_start_position;
                     buffer_left_size = _ps_packet_start_position;
                     processed_size = 0;
-                    data_left_size = MAX_BUFFER_SIZE - _ps_packet_start_position;
                 }
                 else
                 { 
                     LOG("buffer is too small.\n");
 
-                    memset(tmp_data_buf, 0x00, MAX_BUFFER_SIZE);
-                    memset(stream_data_buf, 0x00, MAX_BUFFER_SIZE);
+                    memset(tmp_data_buf, 0x00, buffer_capacity);
+                    memset(stream_data_buf, 0x00, buffer_capacity);
                     buffer_size = 0;
-                    buffer_left_size = MAX_BUFFER_SIZE;
+                    buffer_left_size = buffer_capacity;
                     processed_size = 0;
-                    data_left_size = 0;
                 }
             }
             else
