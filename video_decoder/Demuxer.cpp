@@ -27,9 +27,10 @@ extern "C"
 #endif
 #endif
 
-#include "Demuxer.h"
 #include "stdio.h"
-#include "StreamManager\StreamManager.h"
+
+#include "Demuxer.h"
+#include "utils\logger.h"
 
 namespace bsm {
 namespace bsm_video_decoder {
@@ -40,6 +41,15 @@ namespace bsm_video_decoder {
 callback_pull_ps_stream_demuxer bsm_demuxer::m_callback_pull_ps_stream = NULL;
 callback_push_es_video_stream_demuxer bsm_demuxer::m_callback_push_es_video_stream = NULL;
 callback_push_es_audio_stream_demuxer bsm_demuxer::m_callback_push_es_audio_stream = NULL;
+
+void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
+    callback_push_es_video_stream_demuxer push_es_video_stream,
+    callback_push_es_audio_stream_demuxer push_es_audio_stream)
+{
+    m_callback_pull_ps_stream = pull_ps_stream;
+    m_callback_push_es_video_stream = push_es_video_stream;
+    m_callback_push_es_audio_stream = push_es_audio_stream;
+}
 
 void bsm_demuxer::set_output_es_video_file(char* file_name)
 {
@@ -61,13 +71,13 @@ void bsm_demuxer::set_output_es_audio_file(char* file_name)
 
 bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
 {
-    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
-    //AVInputFormat * av_input_formate = NULL;
     AVOutputFormat *av_output_formate = NULL;
 
     AVFormatContext *av_formate_context_input;
     AVFormatContext *av_formate_context_out_video = NULL;
     AVFormatContext *av_formate_context_out_audio = NULL;
+
+    AVIOContext *av_io_context_output = NULL;
 
     AVPacket av_packet;
 
@@ -75,33 +85,27 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
     AVStream *out_stream_es_video = NULL;
     AVStream *out_stream_es_audio = NULL;
 
-    AVIOContext *av_io_context_output = NULL;
-
     int videoindex = -1;
     int audioindex = -1;
     int frame_index = 0;
 
-    int i_ret;
+    uint8_t *media_buffer = (uint8_t *)av_malloc(sizeof(uint8_t) * BUF_SIZE);
 
     av_formate_context_input = avformat_alloc_context();
 
-    //打开一个输入流，并读取头信息。
-    i_ret = avformat_open_input(&av_formate_context_input, ps_file_name, 0, NULL);
-    if (i_ret < 0)
+    if (avformat_open_input(&av_formate_context_input, ps_file_name, 0, NULL) < 0)
     {
         LOG("Open input file failed.");
         return false;
     }
 
-    //获取媒体流信息
-    i_ret = avformat_find_stream_info(av_formate_context_input, NULL);
-    if (i_ret < 0)
+    if (avformat_find_stream_info(av_formate_context_input, NULL) < 0)
     {
         LOG("Retrieve iniput stream info failed.");
         return false;
     }
 
-    //获取输出文件格式信息
+    //get output file info
     avformat_alloc_output_context2(&av_formate_context_out_video, NULL, NULL, m_output_es_video_file_name);
     if (!av_formate_context_out_video)
     {
@@ -113,7 +117,7 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
         av_output_formate = av_formate_context_out_video->oformat;
     }
 
-    //指定输出格式
+    //set output stream format
     //av_output_format = av_guess_format("h264", NULL, NULL);
     //av_formate_context_out_video = avformat_alloc_context();
     //av_formate_context_out_video->oformat = av_output_format;
@@ -129,7 +133,7 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
         }
     }
 
-    //打开输出流
+    //open output stream
     out_stream_es_video = avformat_new_stream(av_formate_context_out_video, av_formate_context_out_video->video_codec);
 
     if (!out_stream_es_video)
@@ -145,7 +149,7 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
         return false;
     }
 
-    //获取视频流索引
+    //get video stream index
     for (int i = 0; i < av_formate_context_input->nb_streams; ++i)
     {
         in_stream_ps = av_formate_context_input->streams[i];
@@ -159,8 +163,6 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
             break;
         }
     }
-
-    frame_index = 0;
 
     while (1)
     {
@@ -201,19 +203,22 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
         return false;
     }
 
-    avformat_free_context(av_formate_context_out_video);
-    avformat_free_context(av_formate_context_input);
+    if (media_buffer)
+    {
+        av_free(media_buffer);
+    }
+
+    if (av_formate_context_out_video)
+    {
+        avformat_free_context(av_formate_context_out_video);
+    }
+    
+    if (av_formate_context_input)
+    {
+        avformat_free_context(av_formate_context_input);
+    }
 
     return true;
-}
-
-void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
-    callback_push_es_video_stream_demuxer push_es_video_stream,
-    callback_push_es_audio_stream_demuxer push_es_audio_stream)
-{
-    m_callback_pull_ps_stream = pull_ps_stream;
-    m_callback_push_es_video_stream = push_es_video_stream;
-    m_callback_push_es_audio_stream = push_es_audio_stream;
 }
 
 bool bsm_demuxer::demux_ps_to_es_network()
@@ -235,8 +240,6 @@ bool bsm_demuxer::demux_ps_to_es_network()
     int audioindex = -1;
     int frame_index = 0;
 
-    int ret;
-
     unsigned char* input_buffer = (unsigned char*)av_malloc(RTP_V4_RECEIVE_BUFFER);
     unsigned char* output_buffer = (unsigned char*)av_malloc(RTP_V4_RECEIVE_BUFFER);
 
@@ -251,26 +254,26 @@ bool bsm_demuxer::demux_ps_to_es_network()
     av_format_context_input->flags = AVFMT_FLAG_CUSTOM_IO;
 
 
-    if ((ret = avformat_open_input(&av_format_context_input, NULL, NULL, NULL)) < 0)
+    if (avformat_open_input(&av_format_context_input, NULL, NULL, NULL) < 0)
     {
-        av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
-        return ret;
+        LOG("Cannot open input file\n");
+        return false;
     }
 
     input_formate = av_find_input_format("mpeg");
     av_format_context_input->iformat = input_formate;
 
-    if ((ret = avformat_find_stream_info(av_format_context_input, NULL)) < 0)
+    if (avformat_find_stream_info(av_format_context_input, NULL) < 0)
     {
-        av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
-        return ret;
+        LOG("Cannot find stream information\n");
+        return false;
     }
 
     //output
     av_io_context_output = avio_alloc_context(output_buffer, RTP_V4_RECEIVE_BUFFER, 1, NULL, NULL, m_callback_push_es_video_stream, NULL);
     if (av_io_context_output == NULL)
     {
-        return -1;
+        return false;
     }
 
     av_formate_context_out_video = avformat_alloc_context();
@@ -283,8 +286,8 @@ bool bsm_demuxer::demux_ps_to_es_network()
     out_stream_es = avformat_new_stream(av_formate_context_out_video, NULL);
     if (!out_stream_es)
     {
-        av_log(NULL, AV_LOG_ERROR, "Failed allocating output stream\n");
-        return AVERROR_UNKNOWN;
+        LOG("Failed allocating output stream\n");
+        return false;
     }
 
     // Write file header
@@ -294,7 +297,7 @@ bool bsm_demuxer::demux_ps_to_es_network()
         return false;
     }
 
-    //获取视频流索引
+    //get video stream index
     for (int i = 0; i < av_format_context_input->nb_streams; ++i)
     {
         in_stream_ps = av_format_context_input->streams[i];
@@ -308,8 +311,6 @@ bool bsm_demuxer::demux_ps_to_es_network()
             break;
         }
     }
-
-    frame_index = 0;
 
     while (1)
     {
@@ -362,8 +363,18 @@ bool bsm_demuxer::demux_ps_to_es_network()
     
     avio_context_free(&av_io_context_input);
     avio_context_free(&av_io_context_output);
-    avformat_free_context(av_format_context_input);
-    avformat_free_context(av_formate_context_out_video);
+
+    if (av_format_context_input)
+    {
+        avformat_free_context(av_format_context_input);
+    }
+    
+    if (av_formate_context_out_video)
+    {
+        avformat_free_context(av_formate_context_out_video);
+    }
+
+    return true;
 }
 
 
@@ -398,7 +409,7 @@ bool bsm_demuxer::demux_ps_file_to_es_stream(char* ps_file_name)
 
     av_formate_context_input = avformat_alloc_context();
 
-    //打开一个输入流，并读取头信息。
+    //open a input stream, and get head info.
     i_ret = avformat_open_input(&av_formate_context_input, ps_file_name, 0, NULL);
     if (i_ret < 0)
     {
@@ -406,7 +417,6 @@ bool bsm_demuxer::demux_ps_file_to_es_stream(char* ps_file_name)
         return false;
     }
 
-    //获取媒体流信息
     i_ret = avformat_find_stream_info(av_formate_context_input, NULL);
     if (i_ret < 0)
     {
@@ -421,7 +431,7 @@ bool bsm_demuxer::demux_ps_file_to_es_stream(char* ps_file_name)
         return false;
     }
 
-    //获取视频流索引
+    //get video stream index
     for (int i = 0; i < av_formate_context_input->nb_streams; ++i)
     {
         in_stream_ps = av_formate_context_input->streams[i];
