@@ -203,6 +203,13 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
                 pes_video_h264_packet_size = tmp_size.length;
                 pes_video_h264_packet_stuffed_size = pes_video_h264_packet_header->PES_header_data_length;
 
+                packet_processed_length += 6 + pes_video_h264_packet_size;
+                if (packet_total_length < packet_processed_length)
+                {
+                    LOG("error: packet_total_length < packet_processed_length.\n");
+                    break;
+                }
+
                 // +9 的原因是pes_video_h264_packet_stuffed_size之前还有9个字节的头部数据
                 // +6 的原因是pes包的总长度是在头部之后第6个字节处得到的。
                 //write_media_data_to_file(m_output_es_video_file_name,
@@ -215,7 +222,7 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
                         pes_video_h264_packet_size + 6 - 9 - pes_video_h264_packet_stuffed_size);
                 }
 
-                packet_processed_length += 6 + pes_video_h264_packet_size;
+                //packet_processed_length += 6 + pes_video_h264_packet_size;
                 next_pes_packet = packet + packet_processed_length;
             }
 
