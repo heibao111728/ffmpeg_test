@@ -5,6 +5,8 @@ namespace bsm{
 namespace bsm_video_decoder{
 
 #define MAX_FILE_NAME_LENGTH___BSM_DEMUXER 60
+#define RTP_V4_RECEIVE_BUFFER	32768
+
 #define LOG(fmt, ...) fprintf(stdout, "[DEBUG] %s:\n%s:%d: " fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 typedef int(*callback_pull_ps_stream_demuxer)(void *opaque, unsigned char *buf, int buf_size);         //input ps stream
@@ -21,7 +23,6 @@ public:
     bsm_demuxer() {}
     ~bsm_demuxer() {}
 
-    //void set_input_ps_file(char* file_name);
     void set_output_es_video_file(char* file_name);
     void set_output_es_audio_file(char* file_name);
 

@@ -20,7 +20,7 @@ stream_manager::~stream_manager()
 
 int stream_manager::pull_data(void* op, unsigned char* buffer, int length)
 {
-
+    //LOG("this = %d, m_data_length = %d\n", this, m_data_length);
     if (NULL == buffer || NULL == m_stream_data_buffer)
     {
         return 0;
@@ -53,6 +53,7 @@ int stream_manager::pull_data(void* op, unsigned char* buffer, int length)
 
 int stream_manager::push_data(unsigned char* data, int length)
 {
+    //LOG("this = %d, m_data_length = %d\n", this, m_data_length);
     if (NULL == data || NULL == m_stream_data_buffer)
     {
         return 0;

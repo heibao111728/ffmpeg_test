@@ -207,8 +207,6 @@ bool bsm_demuxer::demux_ps_to_es_file(char* ps_file_name)
     return true;
 }
 
-
-
 void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
     callback_push_es_video_stream_demuxer push_es_video_stream,
     callback_push_es_audio_stream_demuxer push_es_audio_stream)
@@ -216,19 +214,6 @@ void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_p
     m_callback_pull_ps_stream = pull_ps_stream;
     m_callback_push_es_video_stream = push_es_video_stream;
     m_callback_push_es_audio_stream = push_es_audio_stream;
-}
-
-FILE *fp_open;
-
-//Read File
-int read_buffer(void *opaque, uint8_t *buf, int buf_size) {
-    if (!feof(fp_open)) {
-        int true_size = fread(buf, 1, buf_size-100, fp_open);
-        return true_size;
-    }
-    else {
-        return -1;
-    }
 }
 
 bool bsm_demuxer::demux_ps_to_es_network()
@@ -252,14 +237,12 @@ bool bsm_demuxer::demux_ps_to_es_network()
 
     int ret;
 
-    unsigned char* input_buffer = (unsigned char*)av_malloc(32768);
-    unsigned char* output_buffer = (unsigned char*)av_malloc(32768);
-
-    fp_open = fopen("E://tmp1.ps", "rb");	//视频源文件 
+    unsigned char* input_buffer = (unsigned char*)av_malloc(RTP_V4_RECEIVE_BUFFER);
+    unsigned char* output_buffer = (unsigned char*)av_malloc(RTP_V4_RECEIVE_BUFFER);
 
     // input
     av_format_context_input = avformat_alloc_context();
-    av_io_context_input = avio_alloc_context(input_buffer, 32768, 0, NULL, m_callback_pull_ps_stream, NULL, NULL);
+    av_io_context_input = avio_alloc_context(input_buffer, RTP_V4_RECEIVE_BUFFER, 0, NULL, m_callback_pull_ps_stream, NULL, NULL);
     if (av_io_context_input == NULL)
     {
         return -1;
@@ -284,7 +267,7 @@ bool bsm_demuxer::demux_ps_to_es_network()
     }
 
     //output
-    av_io_context_output = avio_alloc_context(output_buffer, 32768, 1, NULL, NULL, m_callback_push_es_video_stream, NULL);
+    av_io_context_output = avio_alloc_context(output_buffer, RTP_V4_RECEIVE_BUFFER, 1, NULL, NULL, m_callback_push_es_video_stream, NULL);
     if (av_io_context_output == NULL)
     {
         return -1;
@@ -367,8 +350,16 @@ bool bsm_demuxer::demux_ps_to_es_network()
         return false;
     }
 
-    av_free(input_buffer);
-    av_free(output_buffer);
+    if (input_buffer)
+    {
+        av_free(input_buffer);
+    }
+    
+    if (output_buffer)
+    {
+        av_free(output_buffer);
+    }
+    
     avio_context_free(&av_io_context_input);
     avio_context_free(&av_io_context_output);
     avformat_free_context(av_format_context_input);
