@@ -8,42 +8,7 @@ callback_pull_ps_stream_demuxer2 bsm_demuxer2::m_callback_pull_ps_stream = NULL;
 callback_push_es_video_stream_demuxer2 bsm_demuxer2::m_callback_push_es_video_stream = NULL;
 callback_push_es_audio_stream_demuxer2 bsm_demuxer2::m_callback_push_es_audio_stream = NULL;
 
-int bsm_demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length)
-{
-    if (source && seed)
-    {
-    }
-    else
-    {
-        //failure
-        return 0;
-    }
-
-    unsigned char* pHeader = source + seed_length;
-
-    int total_length = source_length;
-    int processed_length = 0;
-
-    int src_offset = 0;
-    while (total_length - processed_length >= seed_length)
-    {
-        for (int i = 0; i < seed_length && (pHeader[i] == seed[i]); i++)
-        {
-            if (seed_length - 1 == i)
-            {
-                //find ok
-                return seed_length + processed_length;
-            }
-        }
-
-        processed_length++;
-        pHeader = source + seed_length + processed_length;
-    }
-
-    return 0;
-}
-
-bool bsm_demuxer2::find_next_hx_str2(unsigned char* source, int source_length, unsigned char* seed, int seed_length, int* position)
+bool bsm_demuxer2::find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length, int* position)
 {
     if (!source || !seed)
     {
@@ -88,9 +53,9 @@ bool bsm_demuxer2::find_next_ps_packet(unsigned char* source, int source_length,
     ps_packet_start_code[2] = 0x01;
     ps_packet_start_code[3] = 0xba;
 
-    if (find_next_hx_str2(source, source_length, ps_packet_start_code, 4, &_ps_packet_start_point))
+    if (find_next_hx_str(source, source_length, ps_packet_start_code, 4, &_ps_packet_start_point))
     {
-        if (find_next_hx_str2(source + 4, source_length - 4, ps_packet_start_code, 4, &_ps_packet_end_point))
+        if (find_next_hx_str(source + 4, source_length - 4, ps_packet_start_code, 4, &_ps_packet_end_point))
         {
             *ps_packet_start_point = _ps_packet_start_point;
             *ps_packet_length = (_ps_packet_end_point - _ps_packet_start_point)+4;
@@ -135,11 +100,9 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
         && packet[2] == 0x01
         && packet[3] == 0xba)
     {
-        //从ps包头第14个字节的最后3位获取头部填充数据的长度
+        //we can get padding data length , from the last 3 bit in fourteenth(14) byte in header.
         ps_packet_header_stuffed_size = packet[13] & 0x07;
 
-        //+14的原因是表示填充数据的长度位是PS包头部的第14个字节的后3位说明。
-        //不使用sizeof计算PS包头部长度的原因是结构体内部会发生自动对齐，导致该结果不准确。
         packet_processed_length += 14 + ps_packet_header_stuffed_size;
 
         next_pes_packet = packet + packet_processed_length;
@@ -161,7 +124,7 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
 
                 pes_system_header_header_length = tmp_size.length;
 
-                // +6的原因是pes_packet_header_t中长度字节之前还有6个字节
+                // the reason of +6, is there 6 byte data before padding data in header.
                 packet_processed_length += (6 + pes_system_header_header_length);
 
                 next_pes_packet = packet + packet_processed_length;
@@ -181,7 +144,7 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
 
                 pes_program_stream_map_length = tmp_size.length;
 
-                // +6的原因是pes_packet_header_t中自动填充数据之前有6个字节
+                // the reason of +6, is there 6 byte data before padding data in header.
                 packet_processed_length += 6 + pes_program_stream_map_length;
 
                 next_pes_packet = packet + packet_processed_length;
@@ -210,11 +173,8 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
                     break;
                 }
 
-                // +9 的原因是pes_video_h264_packet_stuffed_size之前还有9个字节的头部数据
-                // +6 的原因是pes包的总长度是在头部之后第6个字节处得到的。
-                //write_media_data_to_file(m_output_es_video_file_name,
-                    //next_pes_packet + 9 + pes_video_h264_packet_stuffed_size,
-                    //pes_video_h264_packet_size + 6 - 9 - pes_video_h264_packet_stuffed_size);
+                // the reason of +9 is , before pes_video_h264_packet_stuffed_size filed, there are 9 bit in header.
+                // the reason of +6 is , all pes packet length is get from the sixth bit in header.
                 if (m_callback_push_es_video_stream)
                 {
                     m_callback_push_es_video_stream(NULL, 
@@ -263,7 +223,7 @@ void bsm_demuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLe
     {
         if (NULL == pf_media_file && strlen(file_name) > 0)
         {
-            //一定要以二进制方式打开文件，不然在Windows平台输出文件时会将“换行”转换成“回车+换行”，导致文件出错
+            // must open file as binary model, otherwise, on windows it will replease '\n' to '\r\n'.
             ::fopen_s(&pf_media_file, file_name, "ab+");
         }
 
@@ -431,10 +391,10 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
 
 int bsm_demuxer2::demux_ps_to_es_network()
 {
-    int buffer_capacity = MAX_BUFFER_SIZE;      //buffer 总容量
-    int buffer_size = 0;                        //buffer 中当前数据大小
-    int processed_size = 0;                     //已经解析完的缓存数据大小
-    int buffer_left_size = MAX_BUFFER_SIZE;     //缓存区剩余大小
+    int buffer_capacity = MAX_BUFFER_SIZE;      
+    int buffer_size = 0;                        
+    int processed_size = 0;                     
+    int buffer_left_size = MAX_BUFFER_SIZE;     
 
     int _ps_packet_start_position = 0;
     int _ps_packet_length = 0;

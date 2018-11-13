@@ -8,7 +8,7 @@ namespace bsm_video_decoder{
 
 #define MAX_BUFFER_SIZE (1 * 1024 * 1024)
 
-// PES 包stream_id 之后的两个字节中存放该PES包的长度
+// PES Packet, we can get PES packet length from the follwed two byte of stream_id.
 typedef union littel_endian_size
 {
     unsigned short int  length;
@@ -20,7 +20,7 @@ typedef union littel_endian_size
 */
 typedef struct pes_system_header_packet_header
 {
-    // 详见ISOIEC 13818-1.pdf Table 2-18
+    // if you want get more detail, see ISOIEC 13818-1.pdf Table 2-18
     unsigned char system_header_start_code[4];
     littel_endian_size_u header_length;
     unsigned int marker_bit1 : 1;
@@ -43,7 +43,7 @@ typedef struct pes_system_header_packet_header
 */
 typedef struct pes_program_stream_map_packet_header
 {
-    // 详见ISOIEC 13818-1.pdf Table 2-18
+    // if you want get more detail, see ISOIEC 13818-1.pdf Table 2-18
     unsigned char packet_start_code_prefix[3];
     unsigned char map_stream_id;
     littel_endian_size_u program_stream_map_length;
@@ -101,7 +101,7 @@ typedef struct ps_packet_header
     unsigned short fix_code : 2;                              // must be '0x 01'
     unsigned short system_clock_reference_base_32_30_ : 3;
     unsigned short marker_bit_1 : 1;
-    unsigned short : 0;                  //剩余2bit用0补齐
+    unsigned short : 0;                  //The remaining 2bit with a 0 completion
 
     unsigned short system_clock_reference_base_29_15_ : 15;
     unsigned short marker_bit_2 : 1;                           // 52 bit
@@ -111,7 +111,7 @@ typedef struct ps_packet_header
 
     unsigned short system_clock_reference_extension : 9;
     unsigned short marker_bit_4 : 1;                           // 80 bit,  10 Byte
-    unsigned short : 0;                 //剩余6bit用0补齐
+    unsigned short : 0;                 //The remaining 6bit with a 0 completion
 
     unsigned int program_mux_rate : 22;
     unsigned int marker_bit_5 : 1;
@@ -129,10 +129,8 @@ typedef int(*callback_push_es_audio_stream_demuxer2)(void *opaque, unsigned char
 *   description:
 *       demux ps stream to es stream, without ffmpeg.
 *   
-*   bug:
-*       when ps packet is bigger than MAX_BUFFER_SIZE, program will not work rightly, MAX_BUFFER_SIZE is 8*1024*1024, now
-*
-*   Strengths:
+*   working principle:
+*       using callback function get data to fill local buffer, then analyze data in local buffer, get ps packet, and deal it. 
 *       
 */
 class bsm_demuxer2
@@ -142,21 +140,19 @@ public:
     ~bsm_demuxer2() {}
 
     /**
-    *   功能：
-    *       在源16进制字符串source中，查找指定的的16进制字符序列。
+    *   description:
+    *       find string-hexadecimal, in soutce string.
+    *   
+    *   parameter:
+    *       source,
+    *       source_length,
+    *       seed,               // dest string.
+    *       seed_length,        // dest string length.
+    *       position,           // position of dest string in source string.
     *
-    *   参数列表：
-    *       source：         源字符序列
-    *       source_length：  源字符序列长度
-    *       seed：           被查找的字符序列
-    *       seed_length：    被查找的字符序列长度
-    *   返回值：
-    *       0 ：失败
-    *       >0：成功, 被查找的字符序列在源字符序列中的位移
+    *   return:
     */
-    int find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length);
-
-    bool find_next_hx_str2(unsigned char* source, int source_length, unsigned char* seed, int seed_length, int* position);
+    bool find_next_hx_str(unsigned char* source, int source_length, unsigned char* seed, int seed_length, int* position);
 
     bool find_next_ps_packet(unsigned char* source, int source_length, int* ps_packet_start_point, int* ps_packet_length);
 
@@ -165,7 +161,7 @@ public:
     *       demux ps packet to es packet
     *
     *   return: 
-    *       lentgth of have been dealed, in buffer.
+    *       lentgth of have been processed, in buffer.
     */
     int deal_ps_packet(unsigned char * packet, int length);
 
