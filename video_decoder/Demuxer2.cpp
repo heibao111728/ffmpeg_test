@@ -1,5 +1,7 @@
-#include "Demuxer2.h"
 #include <fstream>
+
+#include "Demuxer2.h"
+#include "utils\logger.h"
 
 namespace bsm {
 namespace bsm_video_decoder {
@@ -182,7 +184,6 @@ int bsm_demuxer2::deal_ps_packet(unsigned char * packet, int length)
                         pes_video_h264_packet_size + 6 - 9 - pes_video_h264_packet_stuffed_size);
                 }
 
-                //packet_processed_length += 6 + pes_video_h264_packet_size;
                 next_pes_packet = packet + packet_processed_length;
             }
 

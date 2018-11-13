@@ -1,7 +1,13 @@
+/*****************************************************************************
+bsm - bstorm distributed streaming analysing system
+Copyright (c) 2018 boostiv , Inc.
+File discription:This file can only be used under the boostiv authorilization.
+Author:	    yangdong
+Datetime:   2018/11/13
+*****************************************************************************/
+
 #ifndef __DEMUXER2_H__
 #define __DEMUXER2_H__
-
-#include "utils\logger.h"
 
 namespace bsm{
 namespace bsm_video_decoder{

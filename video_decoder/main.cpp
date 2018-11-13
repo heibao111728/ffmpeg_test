@@ -83,20 +83,15 @@ int callback_read_data_to_file(void *opaque, uint8_t *buf, int buf_size)
 
 int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
 {
-    int data_length = 0;
+    int recv_date_length = 0;
+    while (recv_date_length != buf_size)
+    {
+        recv_date_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
+        //LOG("src stream_manager don't have enought data, callback will waite a moment.\n");
+    }
+    LOG("receive data success, receive size = %d.\n", recv_date_length);
 
-    int recv_time = 0;
-    //while (recv_time < 50)
-    //{
-        data_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
-        if (0 < data_length)
-        {
-            //LOG("hava receive data, data_length=%d\n", data_length);
-        }
-        recv_time++;
-    //}
-
-    return data_length;
+    return recv_date_length;
 }
 
 /**
@@ -194,7 +189,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer, demux stream from file
     */
-#if 1
+#if 0
     bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer demuxer;
     demuxer.set_output_es_video_file("E://demuxer_callback_stream_demuxer_file.h264");
@@ -265,57 +260,15 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from file.
     */
-#if 0
+#if 1
 
     bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream_file, NULL);
     bsm_demuxer2 demuxer2;
 
-    demuxer2.demux_ps_to_es_file("E://tmp1.ps");
-
-    //unsigned char ps_packet[20];
-    //ps_packet[0] = 0x00;
-    //ps_packet[1] = 0x00;
-    //ps_packet[2] = 0x00;
-    //ps_packet[3] = 0x00;
-    //ps_packet[4] = 0x01;
-    //ps_packet[5] = 0xba;
-    //ps_packet[6] = 0xaa;
-    //ps_packet[7] = 0xbb;
-    //ps_packet[8] = 0xcc;
-    //ps_packet[9] = 0xdd;
-    //ps_packet[10] = 0xee;
-    //ps_packet[11] = 0xff;
-    //ps_packet[12] = 0xaa;
-    //ps_packet[13] = 0xbb;
-    //ps_packet[14] = 0xcc;
-    //ps_packet[15] = 0xdd;
-    //ps_packet[16] = 0x00;
-    //ps_packet[17] = 0x00;
-    //ps_packet[18] = 0x00;
-    //ps_packet[19] = 0xba;
-
-
-    //unsigned char ps_packet_start_code[4];
-    //ps_packet_start_code[0] = 0x00;
-    //ps_packet_start_code[1] = 0x00;
-    //ps_packet_start_code[2] = 0x01;
-    //ps_packet_start_code[3] = 0xba;
-
-    //int ps_packet_length = 0;
-    //int ps_packet_start_position = 0;
-
-    //if (demuxer2.find_next_ps_packet(ps_packet, 20, &ps_packet_start_position, &ps_packet_length))
-    //{
-    //    LOG("find success");
-    //}
-    //else
-    //{
-    //    LOG("not find.");
-    //}
+    demuxer2.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
 
     while (1)
     {
-        //callback_read_data(NULL, NULL, 0);
         Sleep(10);
     }
 
