@@ -19,9 +19,14 @@ extern "C"
 extern "C"
 {
 #endif
-#include <libswscale/swscale.h>
-#include <libavutil/opt.h>
-#include <libavutil/imgutils.h>
+#include "libswscale/swscale.h"
+#include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
+#include <libavformat/avio.h>
+#include <libavutil/file.h>
+#include <libavutil/mathematics.h>
 #ifdef __cplusplus
 };
 #endif
@@ -30,7 +35,7 @@ extern "C"
 #include "stdio.h"
 
 #include "Demuxer.h"
-#include "utils\logger.h"
+#include "utils/logger.h"
 
 namespace bsm {
 namespace bsm_video_decoder {
@@ -56,7 +61,7 @@ void bsm_demuxer::set_output_es_video_file(char* file_name)
     memset(m_output_es_video_file_name, 0x00, MAX_FILE_NAME_LENGTH___BSM_DEMUXER);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(m_output_es_video_file_name, MAX_FILE_NAME_LENGTH___BSM_DEMUXER, "%s", file_name);
+        sprintf(m_output_es_video_file_name, "%s", file_name);
     }
 }
 
@@ -65,7 +70,7 @@ void bsm_demuxer::set_output_es_audio_file(char* file_name)
     memset(m_output_es_audio_file_name, 0x00, MAX_FILE_NAME_LENGTH___BSM_DEMUXER);
     if (strlen(file_name) > 0)
     {
-        sprintf_s(m_output_es_audio_file_name, MAX_FILE_NAME_LENGTH___BSM_DEMUXER, "%s", file_name);
+        sprintf(m_output_es_audio_file_name, "%s", file_name);
     }
 }
 

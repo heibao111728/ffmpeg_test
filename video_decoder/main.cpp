@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer, demux stream from file
     */
-#if 0
+#if 1
     bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer demuxer;
     demuxer.set_output_es_video_file("E://demuxer_callback_stream_demuxer_file.h264");
@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from file.
     */
-#if 1
+#if 0
 
     bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream_file, NULL);
     bsm_demuxer2 demuxer2;

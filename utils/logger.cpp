@@ -13,12 +13,15 @@ bsm_logger::bsm_logger()
 bool bsm_logger::init_logger(char* file_name)
 {
     //FILE* p_logfile;
-    if (0 == fopen_s(&m_fp_logfile, file_name, "w+"))
+    m_fp_logfile = fopen(file_name, "w+");
+    if (m_fp_logfile)
     {
+        printf("create log file success.\n");
         return true;
     }
     else
     {
+        printf("create log file failure.\n");
         return false;
     }
 }

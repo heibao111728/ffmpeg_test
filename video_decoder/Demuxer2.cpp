@@ -1,7 +1,13 @@
 #include <fstream>
+#include <string.h>
+#include <stdlib.h>
 
 #include "Demuxer2.h"
-#include "utils\logger.h"
+#include "utils/logger.h"
+
+#ifndef WIN32
+
+#endif
 
 namespace bsm {
 namespace bsm_video_decoder {
@@ -225,14 +231,14 @@ void bsm_demuxer2::write_media_data_to_file(char* file_name, void* pLog, int nLe
         if (NULL == pf_media_file && strlen(file_name) > 0)
         {
             // must open file as binary model, otherwise, on windows it will replease '\n' to '\r\n'.
-            ::fopen_s(&pf_media_file, file_name, "ab+");
+            pf_media_file = fopen(file_name, "ab+");
         }
 
         if (pf_media_file != NULL)
         {
-            ::fwrite(pLog, nLen, 1, pf_media_file);
-            ::fflush(pf_media_file);
-            ::fclose(pf_media_file);
+            fwrite(pLog, nLen, 1, pf_media_file);
+            fflush(pf_media_file);
+            fclose(pf_media_file);
             pf_media_file = NULL;
         }
     }
@@ -265,11 +271,11 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
     ps_packet_start_code[2] = 0x01;
     ps_packet_start_code[3] = 0xba;
 
-    errno_t err;
+    //errno_t err;
     FILE* pf_ps_file;
 
-    err = ::fopen_s(&pf_ps_file, ps_file_name, "rb");
-    if (err == 0)
+    pf_ps_file = fopen(ps_file_name, "rb");
+    if (pf_ps_file)
     {
         printf("The file '%s' was opened\n", ps_file_name);
     }
@@ -315,7 +321,7 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
                 }
 
                 //read data from file to fill buffer.
-                if(buffer_left_size > fread_s(stream_data_buf + (buffer_capacity - buffer_left_size), buffer_left_size, 1, buffer_left_size, pf_ps_file))
+                if(buffer_left_size > fread(stream_data_buf + (buffer_capacity - buffer_left_size), 1, buffer_left_size, pf_ps_file))
                 {
                     LOG("end of file.\n");
                     is_end_of_file = true;
@@ -376,8 +382,7 @@ int bsm_demuxer2::demux_ps_to_es_file(char* ps_file_name)
 
     if (pf_ps_file)
     {
-        err = fclose(pf_ps_file);
-        if (err == 0)
+        if (0 == fclose(pf_ps_file))
         {
             printf("The file '%s' was closed\n", ps_file_name);
         }
