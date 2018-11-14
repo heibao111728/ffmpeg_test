@@ -5,36 +5,6 @@
 #include "StreamManager\StreamManager.h"
 #include "utils\logger.h"
 
-#define __STDC_CONSTANT_MACROS
-
-#ifdef _WIN32
-//Windows
-extern "C"
-{
-#include "libswscale/swscale.h"
-#include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include <libavformat/avio.h>
-#include <libavutil/file.h>
-#include <libavutil/mathematics.h>
-};
-#else
-//Linux...
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#include <libswscale/swscale.h>
-#include <libavutil/opt.h>
-#include <libavutil/imgutils.h>
-#ifdef __cplusplus
-};
-#endif
-#endif
-
-
 /**
 DTS（Decoding Time Stamp）：即解码时间戳，这个时间戳的意义在于告诉播放器该在什么时候解码这一帧的数据。
 PTS（Presentation Time Stamp）：即显示时间戳，这个时间戳用来告诉播放器该在什么时候显示这一帧的数据。
@@ -154,8 +124,6 @@ int callback_push_es_video_stream_file(void *opaque, uint8_t *data, int data_len
     return write_data_size;
 }
 
-
-
 /**
 *   callback function, used for rtpreceiver.
 */
@@ -189,13 +157,11 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer, demux stream from file
     */
-#if 1
-    bsm_demuxer::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
+#if 0
     bsm_demuxer demuxer;
     demuxer.set_output_es_video_file("E://demuxer_callback_stream_demuxer_file.h264");
 
     demuxer.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
-    //demuxer.demux_ps_to_es_network();
 #endif
 
     /**
@@ -260,9 +226,9 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from file.
     */
-#if 0
+#if 1
 
-    bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream_file, NULL);
+    bsm_demuxer2::setup_callback_function(NULL, callback_push_es_video_stream_file, NULL);
     bsm_demuxer2 demuxer2;
 
     demuxer2.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
@@ -276,6 +242,5 @@ int main(int argc, char* argv[])
 
 #endif 
 
-    //avio_read();
     bsm_logger::get_instance()->uninit_logger();
 }
