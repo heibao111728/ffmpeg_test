@@ -36,7 +36,7 @@ extern "C"
 namespace bsm{
 namespace bsm_image_encoder{
 
-int bsm_get_bytes_per_pixelformat(int width, int height, bsm_pixel_format_e pixel_format)
+int bsm_image_decoder::bsm_get_bytes_per_pixelformat(int width, int height, bsm_pixel_format_e pixel_format)
 {
     int bpp = 0;
 
@@ -78,14 +78,47 @@ int bsm_get_bytes_per_pixelformat(int width, int height, bsm_pixel_format_e pixe
 }
 
 // core converter, convert one pixel format to another. e.g convert yuv420 to rgb24.
-bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_height, AVPixelFormat src_pixfmt,
-    unsigned char *pdata_dst, int dst_size, AVPixelFormat dst_pixfmt)
+bool bsm_image_decoder::bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_height, bsm_pixel_format_e src_pixfmt,
+    unsigned char *pdata_dst, int dst_size, bsm_pixel_format_e dst_pixfmt)
 {
     const int src_w = src_width, src_h = src_height;
     const int dst_w = src_width, dst_h = src_height;
 
     AVFrame *src_frame;  //data before encode, e.g yuv420, rgb24
     AVFrame *dst_frame;  //data after encode, e.g jpeg
+
+    AVPixelFormat _src_pixfmt;
+    AVPixelFormat _dst_pixfmt;
+
+    switch (src_pixfmt)
+    {
+    case yuv420p:
+    {
+        _src_pixfmt = AV_PIX_FMT_YUV420P;
+        break;
+    }
+    case rgb24:
+    {
+        _src_pixfmt = AV_PIX_FMT_RGB24;
+    }
+    default:
+        break;
+    }
+
+    switch (dst_pixfmt)
+    {
+    case yuv420p:
+    {
+        _dst_pixfmt = AV_PIX_FMT_YUV420P;
+        break;
+    }
+    case rgb24:
+    {
+        _dst_pixfmt = AV_PIX_FMT_RGB24;
+    }
+    default:
+        break;
+    }
 
     struct SwsContext *img_convert_ctx;
     img_convert_ctx = sws_alloc_context();
@@ -94,12 +127,12 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     av_opt_set_int(img_convert_ctx, "sws_flags", SWS_BICUBIC | SWS_PRINT_INFO, 0);
     av_opt_set_int(img_convert_ctx, "srcw", src_w, 0);
     av_opt_set_int(img_convert_ctx, "srch", src_h, 0);
-    av_opt_set_int(img_convert_ctx, "src_format", src_pixfmt, 0);
+    av_opt_set_int(img_convert_ctx, "src_format", _src_pixfmt, 0);
     //'0' for MPEG (Y:0-235);'1' for JPEG (Y:0-255)
     av_opt_set_int(img_convert_ctx, "src_range", 1, 0);
     av_opt_set_int(img_convert_ctx, "dstw", dst_w, 0);
     av_opt_set_int(img_convert_ctx, "dsth", dst_h, 0);
-    av_opt_set_int(img_convert_ctx, "dst_format", dst_pixfmt, 0);
+    av_opt_set_int(img_convert_ctx, "dst_format", _dst_pixfmt, 0);
     av_opt_set_int(img_convert_ctx, "dst_range", 1, 0);
     sws_init_context(img_convert_ctx, NULL, NULL);
 
@@ -108,7 +141,7 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     {
         src_frame->width = src_w;
         src_frame->height = src_h;
-        src_frame->format = src_pixfmt;
+        src_frame->format = _src_pixfmt;
     }
 
     if (av_frame_get_buffer(src_frame, 1) < 0)
@@ -117,14 +150,14 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
         return false;
     }
 
-    av_image_fill_arrays(src_frame->data, src_frame->linesize, pdata_src, src_pixfmt, src_frame->width, src_frame->height, 1);
+    av_image_fill_arrays(src_frame->data, src_frame->linesize, pdata_src, _src_pixfmt, src_frame->width, src_frame->height, 1);
 
     dst_frame = av_frame_alloc();
     if (NULL != dst_frame)
     {
         dst_frame->width = src_w;
         dst_frame->height = src_h;
-        dst_frame->format = dst_pixfmt;
+        dst_frame->format = _dst_pixfmt;
     }
 
     //get frame buffer
@@ -137,7 +170,7 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     //do transform
     sws_scale(img_convert_ctx, src_frame->data, src_frame->linesize, 0, dst_frame->height, dst_frame->data, dst_frame->linesize);
 
-    av_image_copy_to_buffer(pdata_dst, dst_size, dst_frame->data, dst_frame->linesize, dst_pixfmt, dst_frame->width, dst_frame->height, 1);
+    av_image_copy_to_buffer(pdata_dst, dst_size, dst_frame->data, dst_frame->linesize, _dst_pixfmt, dst_frame->width, dst_frame->height, 1);
 
     av_frame_free(&src_frame);
     av_frame_free(&dst_frame);
@@ -147,23 +180,29 @@ bool bsm_pixel_format_convert(unsigned char *pdata_src, int src_width, int src_h
     return true;
 }
 
-bool bsm_yuv420p_to_rgb24(unsigned char *pdata_src, int src_width, int src_height, unsigned char *pdata_dst, int data_dst_size)
+bool bsm_image_decoder::bsm_yuv420p_to_rgb24(unsigned char *pdata_src, int src_width, int src_height, unsigned char *pdata_dst, int data_dst_size)
 {
-    AVPixelFormat src_pixfmt = AV_PIX_FMT_YUV420P;
-    AVPixelFormat dst_pixfmt = AV_PIX_FMT_RGB24;
+    //AVPixelFormat src_pixfmt = AV_PIX_FMT_YUV420P;
+    //AVPixelFormat dst_pixfmt = AV_PIX_FMT_RGB24;
+
+    bsm_pixel_format_e src_pixfmt = yuv420p;
+    bsm_pixel_format_e dst_pixfmt = rgb24;
 
     return bsm_pixel_format_convert(pdata_src, src_width, src_height, src_pixfmt, pdata_dst, data_dst_size, dst_pixfmt);
 }
 
-bool bsm_rgb24_to_yuv420p(unsigned char *pdata_src, int src_width, int src_height, unsigned char *pdata_dst, int data_dst_size)
+bool bsm_image_decoder::bsm_rgb24_to_yuv420p(unsigned char *pdata_src, int src_width, int src_height, unsigned char *pdata_dst, int data_dst_size)
 {
-    AVPixelFormat src_pixfmt = AV_PIX_FMT_RGB24;
-    AVPixelFormat dst_pixfmt = AV_PIX_FMT_YUV420P;
+    //AVPixelFormat src_pixfmt = AV_PIX_FMT_RGB24;
+    //AVPixelFormat dst_pixfmt = AV_PIX_FMT_YUV420P;
+
+    bsm_pixel_format_e src_pixfmt = rgb24;
+    bsm_pixel_format_e dst_pixfmt = yuv420p;
 
     return bsm_pixel_format_convert(pdata_src, src_width, src_height, src_pixfmt, pdata_dst, data_dst_size, dst_pixfmt);
 }
 
-bool bsm_yuv420p_to_jpeg(unsigned char *pdata_src, const char *output_file_name, int src_width, int src_height)
+bool bsm_image_decoder::bsm_yuv420p_to_jpeg(unsigned char *pdata_src, const char *output_file_name, int src_width, int src_height)
 {
     AVFormatContext *p_format_context;
     AVStream *video_st;
@@ -242,7 +281,7 @@ bool bsm_yuv420p_to_jpeg(unsigned char *pdata_src, const char *output_file_name,
     return true;
 }
 
-bool bsm_rgb24_to_jpeg(unsigned char *pdata_src, const char *output_file_name, int src_width, int src_height)
+bool bsm_image_decoder::bsm_rgb24_to_jpeg(unsigned char *pdata_src, const char *output_file_name, int src_width, int src_height)
 {
     int bufsize = src_width*src_height * 3 / 2;
     unsigned char* data = (unsigned char*)malloc(bufsize);

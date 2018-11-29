@@ -7,7 +7,7 @@ using namespace bsm_image_encoder;
 
 int main(int argc, char* argv[])
 {
-#if 0 
+#if 1
     /** 
     * 将yuv420p格式数据转换成rgb24格式
     */
@@ -15,9 +15,10 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
+    bsm_image_decoder image_decoder;
 
-    int src_size = bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
-    int dst_size = bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
+    int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
+    int dst_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
 
 
     unsigned char *src_buffer = (unsigned char *)malloc(src_size);
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (!bsm_yuv420p_to_rgb24(src_buffer, src_w, src_h, dst_buffer, dst_size))
+    if (!image_decoder.bsm_yuv420p_to_rgb24(src_buffer, src_w, src_h, dst_buffer, dst_size))
     {
         printf("formate convert failure\n");
         return -1;
@@ -67,9 +68,11 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
+    bsm_image_decoder image_decoder;
 
-    int src_size = bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
-    int dst_size = bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
+
+    int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
+    int dst_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
 
 
     unsigned char *src_buffer = (unsigned char *)malloc(src_size);
@@ -96,7 +99,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (!bsm_rgb24_to_yuv420p(src_buffer, src_w, src_h, dst_buffer, dst_size))
+    if (!image_decoder.bsm_rgb24_to_yuv420p(src_buffer, src_w, src_h, dst_buffer, dst_size))
     {
         printf("formate convert failure\n");
         return -1;
@@ -119,9 +122,11 @@ int main(int argc, char* argv[])
 
     int src_w = 640;
     int src_h = 480;
+
+    bsm_image_decoder image_decoder;
     
     //读取像素数据方法一：
-    int src_size = bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
+    int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
 
     unsigned char *src_buffer = (unsigned char *)malloc(src_size);
 
@@ -137,7 +142,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    bsm_yuv420p_to_jpeg(src_buffer, output_file_name, src_w, src_h);
+    image_decoder.bsm_yuv420p_to_jpeg(src_buffer, output_file_name, src_w, src_h);
     fclose(src_file);
 
     //读取像素数据方法二，该方法读取的数据，不能用于sws_scale()进行色彩模式转换，原因目前未知。
@@ -159,7 +164,7 @@ int main(int argc, char* argv[])
     return 1;
 #endif
 
-#if 1
+#if 0
     /**
     *   save rgb420 to jpg
     */
@@ -169,8 +174,10 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
+    bsm_image_decoder image_decoder;
+
     //读取像素数据方法一：
-    int src_size = bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
+    int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
 
     unsigned char *src_buffer = (unsigned char *)malloc(src_size);
 
@@ -186,7 +193,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    bsm_rgb24_to_jpeg(src_buffer, output_file_name, src_w, src_h);
+    image_decoder.bsm_rgb24_to_jpeg(src_buffer, output_file_name, src_w, src_h);
     fclose(src_file);
 
     //读取像素数据方法二，该方法读取的数据，不能用于sws_scale()进行色彩模式转换，原因目前未知。
