@@ -3,7 +3,7 @@
 #include "bsm_image_encoder.h"
 
 using namespace bsm;
-using namespace bsm_image_encoder;
+using namespace image_encoder;
 
 int main(int argc, char* argv[])
 {
@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
-    bsm_image_decoder image_decoder;
+    bsm_image_encoder image_decoder;
 
     int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
     int dst_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
-    bsm_image_decoder image_decoder;
+    bsm_image_encoder image_decoder;
 
 
     int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
-    bsm_image_decoder image_decoder;
+    bsm_image_encoder image_decoder;
     
     //读取像素数据方法一：
     int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, yuv420p);
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
     int src_w = 640;
     int src_h = 480;
 
-    bsm_image_decoder image_decoder;
+    bsm_image_encoder image_decoder;
 
     //读取像素数据方法一：
     int src_size = image_decoder.bsm_get_bytes_per_pixelformat(src_w, src_h, rgb24);

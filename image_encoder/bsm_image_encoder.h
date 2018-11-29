@@ -10,7 +10,7 @@ Datetime:2018/9/26
 #define BSTORM_IMAGE_ENCODER_H_
 
 namespace bsm{
-namespace bsm_image_encoder{
+namespace image_encoder{
     
 typedef enum bsm_pixel_format
 {
@@ -21,11 +21,11 @@ typedef enum bsm_pixel_format
     bgr24,
 } bsm_pixel_format_e;
 
-class bsm_image_decoder
+class bsm_image_encoder
 {
 public:
-    bsm_image_decoder() {}
-    ~bsm_image_decoder() {}
+    bsm_image_encoder() {}
+    ~bsm_image_encoder() {}
 
     /**
     *  description:
@@ -50,7 +50,7 @@ private:
         unsigned char *pdata_dst, int dst_size, bsm_pixel_format_e dst_pixfmt);
 
 };
-} // namespace bsm_image_encoder
+} // namespace image_encoder
 } // namespace bsm
 
 #endif
