@@ -43,10 +43,6 @@ namespace bsm_video_decoder {
 #define BUF_SIZE (1*1024*1024)
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE (8*1024)
 
-callback_pull_ps_stream_demuxer bsm_demuxer::m_callback_pull_ps_stream = NULL;
-callback_push_es_video_stream_demuxer bsm_demuxer::m_callback_push_es_video_stream = NULL;
-callback_push_es_audio_stream_demuxer bsm_demuxer::m_callback_push_es_audio_stream = NULL;
-
 void bsm_demuxer::setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
     callback_push_es_video_stream_demuxer push_es_video_stream,
     callback_push_es_audio_stream_demuxer push_es_audio_stream)

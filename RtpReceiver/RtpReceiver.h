@@ -86,7 +86,7 @@ public:
 
     void write_media_data_to_file(char* file_name, void* pLog, int nLen);
 
-    static void setup_callback_function(
+    void setup_callback_function(
         callback_get_ps_stream_fp get_ps_stream,
         callback_get_h264_stream_fp get_h264_stream,
         callback_get_mpeg4_stream_fp get_mpeg4_stream,
@@ -102,10 +102,10 @@ private:
     char m_client_ip[20 + 1];
     uint16_t m_media_port;
 
-    static callback_get_ps_stream_fp m_callback_get_ps_stream;
-    static callback_get_h264_stream_fp m_callback_get_h264_stream;
-    static callback_get_mpeg4_stream_fp m_callback_get_mpeg4_stream;
-    static callback_get_svac_stream_fp m_callback_get_svac_stream;
+    callback_get_ps_stream_fp m_callback_get_ps_stream;
+    callback_get_h264_stream_fp m_callback_get_h264_stream;
+    callback_get_mpeg4_stream_fp m_callback_get_mpeg4_stream;
+    callback_get_svac_stream_fp m_callback_get_svac_stream;
 };
 
 #endif

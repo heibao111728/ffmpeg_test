@@ -13,6 +13,8 @@ PTS（Presentation Time Stamp）：即显示时间戳，这个时间戳用来告诉播放器该在什么时
 using namespace bsm;
 using namespace bsm_video_decoder;
 
+stream_manager g_stream_manager;
+
 void write_media_data_to_file(char* file_name, void* pLog, int nLen)
 {
     FILE* m_pLogFile = NULL ;
@@ -38,7 +40,7 @@ int callback_read_data_to_file(void *opaque, uint8_t *buf, int buf_size)
 
     unsigned char buffer[100 * 1024] = { 0 };
 
-    data_length = stream_manager::get_instance()->pull_data(NULL, buffer, 100 * 1024);
+    data_length = g_stream_manager.pull_data(NULL, buffer, 100 * 1024);
     if (0 < data_length)
     {
         LOG("hava receive data, data_length=%d\n", data_length);
@@ -56,7 +58,7 @@ int callback_pull_ps_stream(void *opaque, uint8_t *buf, int buf_size)
     int recv_date_length = 0;
     while (recv_date_length != buf_size)
     {
-        recv_date_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
+        recv_date_length = g_stream_manager.pull_data(NULL, buf, buf_size);
         //LOG("src stream_manager don't have enought data, callback will waite a moment.\n");
     }
     LOG("receive data success, receive size = %d.\n", recv_date_length);
@@ -72,7 +74,7 @@ int callback_pull_ps_stream_dexuxer(void *opaque, uint8_t *buf, int buf_size)
     int recv_date_length = 0;
     while (recv_date_length != buf_size)
     {
-        recv_date_length = stream_manager::get_instance()->pull_data(NULL, buf, buf_size);
+        recv_date_length = g_stream_manager.pull_data(NULL, buf, buf_size);
         //LOG("src stream_manager don't have enought data, callback will waite a moment.\n");
     }
     LOG("receive data success, receive size = %d.\n", recv_date_length);
@@ -133,7 +135,7 @@ int callback_push_ps_stream(void *opaque, uint8_t *buf, int data_length)
     int write_data_length = 0;
     int read_data_length = 0;
     unsigned char buffer[100 * 1024] = { 0 };
-    write_data_length = stream_manager::get_instance()->push_data(buf, data_length);
+    write_data_length = g_stream_manager.push_data(buf, data_length);
     if (0 < write_data_length)
     {
         //LOG("write data, data_length=%d\n", write_data_length);
@@ -171,17 +173,17 @@ int main(int argc, char* argv[])
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);
 
-    stream_manager::set_capacity_size(4 * 1024 * 1024);
+    g_stream_manager.set_capacity_size(4 * 1024 * 1024);
 
-    CRtpReceiver::setup_callback_function(callback_push_ps_stream, NULL, NULL, NULL);
     CRtpReceiver rtp_recviver;
+    rtp_recviver.setup_callback_function(callback_push_ps_stream, NULL, NULL, NULL);
     rtp_recviver.set_cleint_ip("192.168.2.102");
     rtp_recviver.start_proc();
 
     //Sleep(5000);
 
-    bsm_demuxer::setup_callback_function(callback_pull_ps_stream_dexuxer, callback_push_es_video_stream, NULL);
     bsm_demuxer demuxer;
+    demuxer.setup_callback_function(callback_pull_ps_stream_dexuxer, callback_push_es_video_stream, NULL);
 
     demuxer.demux_ps_to_es_network();
 
@@ -196,20 +198,20 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from RTP.
     */
-#if 0
+#if 1
 
     WSADATA dat;
     WSAStartup(MAKEWORD(2, 2), &dat);
 
-    stream_manager::set_capacity_size(4*1024*1024);
+    g_stream_manager.set_capacity_size(4*1024*1024);
 
-    CRtpReceiver::setup_callback_function(callback_push_ps_stream, NULL, NULL, NULL);
     CRtpReceiver rtp_recviver;
+    rtp_recviver.setup_callback_function(callback_push_ps_stream, NULL, NULL, NULL);
     rtp_recviver.set_cleint_ip("192.168.2.102");
     rtp_recviver.start_proc();
 
-    bsm_demuxer2::setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
     bsm_demuxer2 demuxer2;
+    demuxer2.setup_callback_function(callback_pull_ps_stream, callback_push_es_video_stream, NULL);
 
     demuxer2.demux_ps_to_es_network();
 
@@ -226,10 +228,10 @@ int main(int argc, char* argv[])
     /**
     *   test bsm_demuxer2, demux stream from file.
     */
-#if 1
+#if 0
 
-    bsm_demuxer2::setup_callback_function(NULL, callback_push_es_video_stream_file, NULL);
     bsm_demuxer2 demuxer2;
+    demuxer2.setup_callback_function(NULL, callback_push_es_video_stream_file, NULL);
 
     demuxer2.demux_ps_to_es_file("E://rtpreciver_tmp1.ps");
 

@@ -1,12 +1,9 @@
 #include "StreamManager.h"
 
-stream_manager* stream_manager::m_instance = NULL;
-int stream_manager::m_capacity = 0;
-
-stream_manager::stream_manager()
+stream_manager::stream_manager(int capacity)
+    :m_capacity(capacity)
 {
     m_stream_data_buffer = (unsigned char*)malloc(m_capacity);
-
     m_data_length = 0;
 }
 
@@ -16,6 +13,16 @@ stream_manager::~stream_manager()
     {
         free(m_stream_data_buffer);
     }
+}
+
+void stream_manager::set_capacity_size(int capacity_size)
+{
+    m_capacity = capacity_size;
+    if (m_stream_data_buffer)
+    {
+        delete m_stream_data_buffer;
+    }
+    m_stream_data_buffer = (unsigned char*)malloc(m_capacity);
 }
 
 int stream_manager::pull_data(void* op, unsigned char* buffer, int length)

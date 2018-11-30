@@ -38,13 +38,14 @@ public:
     bool demux_ps_file_to_es_stream(char* ps_file_name);
 
 public:
-    static void setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
+    void setup_callback_function(callback_pull_ps_stream_demuxer pull_ps_stream,
         callback_push_es_video_stream_demuxer push_es_video_stream,
         callback_push_es_audio_stream_demuxer push_es_audio_stream);
 
-    static callback_pull_ps_stream_demuxer m_callback_pull_ps_stream;
-    static callback_push_es_video_stream_demuxer m_callback_push_es_video_stream;
-    static callback_push_es_audio_stream_demuxer m_callback_push_es_audio_stream;
+private:
+    callback_pull_ps_stream_demuxer m_callback_pull_ps_stream;
+    callback_push_es_video_stream_demuxer m_callback_push_es_video_stream;
+    callback_push_es_audio_stream_demuxer m_callback_push_es_audio_stream;
 
 private:
     char m_output_es_video_file_name[MAX_FILE_NAME_LENGTH___BSM_DEMUXER];

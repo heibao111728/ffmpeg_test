@@ -12,31 +12,12 @@ using namespace bsm_utils;
 
 class stream_manager
 {
-private:
-    stream_manager();
+public:
+    stream_manager(int capacity = 1*1024*1024);
     ~stream_manager();
 
-public:
-    static stream_manager* m_instance;
-
-    static stream_manager* get_instance()
-    {
-        if (NULL != m_instance)
-        {
-            return m_instance;
-        }
-        else
-        {
-            m_instance = new stream_manager();
-            return m_instance;
-        }
-    }
-
-    static int m_capacity;
-    static void set_capacity_size(int capacity_size)
-    {
-        m_capacity = capacity_size;
-    }
+    
+    void set_capacity_size(int capacity_size);
 
     /**
     *   description:
@@ -57,6 +38,7 @@ private:
     int m_stream_start_point;
     int m_stream_end_point;
     int m_data_length;
+    int m_capacity;
 
     bsm_lock m_lock;
 };

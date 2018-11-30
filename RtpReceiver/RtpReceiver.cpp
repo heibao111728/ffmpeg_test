@@ -1,11 +1,6 @@
 #include "RtpReceiver.h"
 #include <process.h>
 
-callback_get_ps_stream_fp CRtpReceiver::m_callback_get_ps_stream = NULL;
-callback_get_h264_stream_fp CRtpReceiver::m_callback_get_h264_stream = NULL;
-callback_get_mpeg4_stream_fp CRtpReceiver::m_callback_get_mpeg4_stream = NULL;
-callback_get_svac_stream_fp CRtpReceiver::m_callback_get_svac_stream = NULL;
-
 CRtpReceiver::CRtpReceiver(unsigned short rtpPort)
     :m_media_port(rtpPort)
 {

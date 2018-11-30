@@ -176,15 +176,13 @@ public:
 
     void write_media_data_to_file(char* file_name, void* pLog, int nLen);
 
-    static void setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
+    void setup_callback_function(callback_pull_ps_stream_demuxer2 pull_ps_stream,
         callback_push_es_video_stream_demuxer2 push_es_video_stream,
         callback_push_es_audio_stream_demuxer2 push_es_audio_stream);
-
-    static callback_pull_ps_stream_demuxer2 m_callback_pull_ps_stream;
-    static callback_push_es_video_stream_demuxer2 m_callback_push_es_video_stream;
-    static callback_push_es_audio_stream_demuxer2 m_callback_push_es_audio_stream;
-
 private:
+    callback_pull_ps_stream_demuxer2 m_callback_pull_ps_stream;
+    callback_push_es_video_stream_demuxer2 m_callback_push_es_video_stream;
+    callback_push_es_audio_stream_demuxer2 m_callback_push_es_audio_stream;
     
 };
 
